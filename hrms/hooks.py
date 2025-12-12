@@ -212,7 +212,7 @@ doc_events = {
 		"after_delete": "hrms.overrides.employee_master.publish_update",
 	},
 	"Project": {"validate": "hrms.controllers.employee_boarding_controller.update_employee_boarding_status"},
-	"Task": {"on_update": "hrms.controllers.employee_boarding_controller.update_task"},
+	"Task": {"on_update": "hrms.controllers.employee_boarding_controller.update_task"}
 }
 
 # Scheduled Tasks

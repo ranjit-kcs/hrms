@@ -12,7 +12,11 @@
   "bugs": {
     "url": "https://github.com/frappe/hrms/issues"
   },
-  "aworkspaces": ["frontend", "roster", "frappe-ui"],
+  "aworkspaces": [
+    "frontend",
+    "roster",
+    "frappe-ui"
+  ],
   "scripts": {
     "postinstall": "yarn install-pwa-deps && yarn install-roster-deps",
     "install-pwa-deps": "cd frontend && yarn install --check-files",
@@ -24,6 +28,9 @@
     "build-roster": "cd roster && yarn build"
   },
   "dependencies": {
+    "@fingerprintjs/fingerprintjs": "^5.0.1",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "face-api.js": "^0.22.2",
     "html2canvas": "^1.4.1"
   }
 }

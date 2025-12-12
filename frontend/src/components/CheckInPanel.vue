@@ -1257,7 +1257,7 @@ const csrfToken =
   };
 
   const response = await fetch(
-    "/api/method/hrms.api.api.create_checkin_joureny",
+    "/api/method/hrms.api.api.create_checkin_journey",
     {
       method: "POST",
       credentials: "include", //  send session cookies
@@ -1268,6 +1268,8 @@ const csrfToken =
       body: JSON.stringify(payload),
     }
   );
+  
+  console.log("working-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
   const result = await response.json();
 

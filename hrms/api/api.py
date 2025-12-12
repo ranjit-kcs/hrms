@@ -36,6 +36,7 @@ def get_all_hospital():
         frappe.local.response["http_status_code"] = 500
         return {"success": False, "message": "Failed to fetch Hospital records"}
 
+
 @frappe.whitelist()
 def create_hospital(**kwargs):
     try:
@@ -50,6 +51,7 @@ def create_hospital(**kwargs):
         frappe.local.response["http_status_code"] = 500
         return {"success": False, "message": "Failed to create Hospital"}
 
+
 @frappe.whitelist()
 def get_all_opportunity():
     try:
@@ -59,6 +61,7 @@ def get_all_opportunity():
         frappe.log_error(frappe.get_traceback(), "Opportunity - GetAll Error")
         frappe.local.response["http_status_code"] = 500
         return {"success": False, "message": "Failed to fetch Opportunity records"}
+
 
 @frappe.whitelist()
 def create_opportunity(**kwargs):
@@ -84,6 +87,7 @@ def get_all_car():
         frappe.local.response["http_status_code"] = 500
         return {"success": False, "message": "Failed to fetch CAR records"}
 
+
 @frappe.whitelist()
 def create_car(**kwargs):
     try:
@@ -100,15 +104,20 @@ def create_car(**kwargs):
 
 
 @frappe.whitelist()
-def create_checkin_joureny(**kwargs):
+def create_checkin_journey(**kwargs):
     try:
-        doc = frappe.new_doc("CheckIn Journey")
-        for k, v in kwargs.items():
-            doc.set(k, v)
+        doc = frappe.new_doc("Checkin Journey")
+        doc.update(kwargs)
         doc.insert(ignore_permissions=True)
-        frappe.db.commit()
-        return {"success": True, "data": doc}
-    except Exception:
-        frappe.log_error(frappe.get_traceback(), "CheckIn Journey - Create Error")
-        frappe.local.response["http_status_code"] = 500
-        return {"success": False, "message": "Failed to create CheckIn Journey"}
+
+        return {
+            "success": True,
+            "data": doc
+        }
+ 
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "CheckIn Journey - Create Error") 
+        return {
+            "success": False,
+            "message": str(e)
+        }
