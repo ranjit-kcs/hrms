@@ -109,7 +109,6 @@ def create_checkin_journey(**kwargs):
         doc = frappe.new_doc("Checkin Journey")
         doc.update(kwargs)
         doc.insert(ignore_permissions=True)
-
         return {
             "success": True,
             "data": doc

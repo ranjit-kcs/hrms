@@ -15,7 +15,7 @@
 		"@fingerprintjs/fingerprintjs": "^5.0.1",
 		"@ionic/vue": "^7.4.3",
 		"@ionic/vue-router": "^7.4.3",
-		"@vitejs/plugin-vue": "^6.0.2",
+		"@vitejs/plugin-vue": "^6.0.3",
 		"autoprefixer": "^10.4.19",
 		"dayjs": "^1.11.11",
 		"face-api.js": "^0.22.2",

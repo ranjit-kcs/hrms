@@ -37,8 +37,7 @@
 	<ion-modal
 		v-if="settings.data?.allow_employee_checkin_from_mobile_app"
 		ref="modal"
-		trigger="open-checkin-modal"
-		
+		:is-open="isCheckinModalOpen"
 		@didPresent="onModalOpen"
 		@didDismiss="onModalClose"
 	>
@@ -501,6 +500,7 @@ import { IonModal,IonButton, modalController } from "@ionic/vue"
 import { formatTimestamp } from "@/utils/formatters"
 import * as faceapi from "face-api.js"
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
+import { getRuntimeConfig } from "@/utils/runtimeConfig";
 
 
 const video = ref(null)
@@ -511,7 +511,6 @@ const statusMessage = ref("Initializing...")
 let faceMatched = false
 let isCheckOut = false
 let isSalesFaceMatched=false
-
 const statusColor = ref("gray")
 let modelsLoaded = false
 let comparisonInterval = null
@@ -520,6 +519,8 @@ let stream = null
 let field_employee=ref("")
 let device_id=ref("")
 let locationDescription=ref("")
+const isCheckinModalOpen = ref(false)
+let azure_key = ref("")
 
 
 // let typeofCheckIn=ref("")
@@ -648,6 +649,11 @@ async function createLead() {
   }
 }
 
+// onMounted(() => {
+//   console.log("working->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>loadazurekey");
+  // loadAzureKey();
+// });
+
 async function createOpportunity() {
   const csrfToken =
     frappe?.csrf_token || window?.csrf_token || getCookie("csrf_token");
@@ -774,8 +780,20 @@ const fetchLocation = () => {
 }
 
 const handleEmployeeCheckin = () => {
-	checkinTimestamp.value = dayjs().format("YYYY-MM-DD HH:mm:ss")
-	if (settings.data?.allow_geolocation_tracking) fetchLocation()
+  const key = azure_key
+  
+  if (!key) {
+    alert("Key is Missing");
+    return; // ❌ modal never opens
+  }
+  checkinTimestamp.value = dayjs().format("YYYY-MM-DD HH:mm:ss");
+  if (settings.data?.allow_geolocation_tracking) {
+    fetchLocation();
+  }
+  isCheckinModalOpen.value = true; // ✅ open modal manually
+};
+function closeModalAndCamera() {
+  isCheckinModalOpen.value = false;
 }
 
 // ✅ Start camera only when popup opens
@@ -829,9 +847,13 @@ if (user?.data?.user_image) {
 
 // 🧹 Stop camera when popup closes
 function onModalClose() {
-	stopCamera()
-	statusMessage.value = "Camera stopped."
-	statusColor.value = "gray"
+  stopCamera();
+  if (comparisonInterval) {
+    clearInterval(comparisonInterval);
+    comparisonInterval = null;
+  }
+  statusMessage.value = "Camera stopped.";
+  statusColor.value = "gray";
 }
 
 async function startCamera() {
@@ -1159,8 +1181,47 @@ function captureImage() {
 	return canvas.toDataURL("image/jpeg", 0.9) // returns Base64 image
 }
 
+// let AZURE_KEY = "";
+
+// async function loadAzureKey() {
+//   const config = await getRuntimeConfig();
+//   console.log(config, "configgggggggggggggggggggggg")
+//   console.log(config.AZURE_KEY, "dataaaaaaaaaaaaaaaaaaaa");
+  
+//   AZURE_KEY = config.AZURE_KEY || "";
+
+//   if (!AZURE_KEY) {
+//     alert("Please add the Azure key in System Settings");
+//     return;
+//   }
+
+//   console.log("Azure Key loaded:", AZURE_KEY);
+// }
+
+async function initAzure() {
+  const config = await getRuntimeConfig();
+  azure_key = config.AZURE_KEY;
+  if (!azure_key) {
+    alert("System configuration missing. Please contact the System Admin.");
+    console.warn("Azure key missing in System Settings");
+    return;
+  }
+}
+
+
+
 async function getDistanceInMeters(currentLat, currentLon, expectedLat, expectedLon) {
- const key = import.meta.env.VITE_AZURE_MAPS_KEY;
+  const key = azure_key 
+
+  if (!key) {
+    console.warn("Azure Key missing");
+    alert("Please add the key in the system settings");
+    modalController.dismiss()
+    onModalClose()
+  }
+
+  console.log("Using Azure Key:", key);
+
 //   expectedLat = 12.8742
 //   expectedLon= 77.5569
 
@@ -1186,7 +1247,14 @@ async function getDistanceInMeters(currentLat, currentLon, expectedLat, expected
 }
 
 async function getLocationAPI(currentLat, currentLon) {
-  const key = import.meta.env.VITE_AZURE_MAPS_KEY;
+  const key = azure_key
+
+  if (!key) {
+    console.warn("Azure Key missing");
+    stopCamera()
+    alert("Please add the key in the system settings");
+    return null;
+  }
 
   const url = `https://atlas.microsoft.com/search/address/reverse/json?api-version=1.0&subscription-key=${key}&query=${currentLat},${currentLon}`;
 
@@ -1215,15 +1283,6 @@ async function CreateCheckInJoureny(){
   if(distance!==0){
 dis_km = Number((distance / 1000).toFixed(2));
   }
-
-   
-
-// console.log("Distance",dis_km);
-
-
-// -----------------
-			// console.log("last chek --",lastLogRefDoctype.value)
-			// console.log("Current chek --",currentLogRefDoctype.value)
 
 
 
@@ -1268,8 +1327,7 @@ const csrfToken =
       body: JSON.stringify(payload),
     }
   );
-  
-  console.log("working-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+
 
   const result = await response.json();
 
@@ -1322,6 +1380,7 @@ currentLogRefName.value=refDocDN
 				if (capturedImage) {
 					await uploadCapturedImage(doc.name, capturedImage)
 				}
+        isCheckinModalOpen.value = false;
 				modalController.dismiss()
 				stopCamera()
 				if (field_employee.value === 'Yes' && actionLabel === 'Check-in') {
@@ -1570,7 +1629,7 @@ onMounted(async () => {
 	setTimeout(() => {
     loadAllOptions();
   }, 1000);
-
+  initAzure();
   const deviceId = await getDeviceId();
   device_id.value=deviceId;
 // console.log(" Device ID:", deviceId);

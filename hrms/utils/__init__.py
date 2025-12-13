@@ -5,6 +5,9 @@ import requests
 import frappe
 from frappe.utils import add_days, date_diff
 
+import os
+import json
+
 country_info = {}
 
 
@@ -60,3 +63,24 @@ def get_employee_email(employee_id: str) -> str | None:
 		or employee_emails.company_email
 		or employee_emails.personal_email
 	)
+
+from frappe.utils import get_site_path
+
+def update_frontend_settings(doc, method):
+    print("function is working")
+
+    # Get value safely
+    value = frappe.db.get_single_value("System Settings", "azure_key_") or ""
+
+    # ✅ WRITE TO SITE PUBLIC FOLDER (NOT apps/)
+    file_path = get_site_path("public", "hrms", "settings.env")
+
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    # Write content
+    content = f"AZURE_KEY={value}\n"
+    with open(file_path, "w") as f:
+        f.write(content)
+
+    print("Updated file:", file_path)
