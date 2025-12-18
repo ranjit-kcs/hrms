@@ -212,15 +212,22 @@
 					></iframe>
 				</div> -->
 			</template>
-			<Checkbox
+			<!-- <Checkbox
 			v-if="nextAction.action ==='OUT'"
+    size="sm"
+    :value="true"
+    v-model="forgetCheckOut"
+    label="Forget to CheckOut"
+  /> -->
+  <Checkbox
+			v-if="nextAction.action ==='OUT' && isSalesFaceMatched"
     size="sm"
     :value="true"
     v-model="forgetCheckOut"
     label="Forget to CheckOut"
   />
   <!-- faceMatched === true &&  -->
-			<Button
+			<!-- <Button
 			v-if="field_employee==='Yes' && isSalesFaceMatched && nextAction.action==='IN'"
 				:loading="checkins.insert.loading"
 				variant="solid"
@@ -237,6 +244,24 @@
 				@click="submitLog('IN')"
 			>
 				{{ __("Confirm Check-out") }}
+			</Button> -->
+      <Button
+			v-if="field_employee==='Yes' && isSalesFaceMatched && !forgetCheckOut && nextAction.action==='IN'"
+				:loading="checkins.insert.loading"
+				variant="solid"
+				class="w-full py-5 text-sm disabled:bg-gray-700"
+				@click="submitLog(nextAction.action)"
+			>
+				{{ __("Confirm {0}", [nextAction.label]) }}
+			</Button>
+      <Button
+			v-if="isSalesFaceMatched && forgetCheckOut && isValidLocation"
+				:loading="checkins.insert.loading"
+				variant="solid"
+				class="w-full py-5 text-sm disabled:bg-gray-700"
+				@click="submitLog('IN')"
+			>
+				{{ __("Confirm Check-In") }}
 			</Button>
 		</div>
 	</ion-modal>
@@ -511,6 +536,7 @@ const statusMessage = ref("Initializing...")
 let faceMatched = false
 let isCheckOut = false
 let isSalesFaceMatched=false
+let isValidLocation=true
 const statusColor = ref("gray")
 let modelsLoaded = false
 let comparisonInterval = null
@@ -990,9 +1016,9 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
     if (dist <= defaultRadius) {
       submitLog(nextAction.value.action);
     } else {
-      statusMessage.value =
-        "You Are Outside The Work-From-Home Allowed Boundary";
+      statusMessage.value ="You Are Outside The Work-From-Home Allowed Boundary";
       statusColor.value = "red";
+      isValidLocation=false;
     }
   }
 
@@ -1051,12 +1077,14 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
       } else {
         statusMessage.value = "You Are Outside the Boundary";
         statusColor.value = "red";
+        isValidLocation=false;
       }
     }
   } else {
     faceMatched = false;
     statusMessage.value = "Matched but Outside Allowed Office Boundary";
     statusColor.value = "red";
+    isValidLocation=false;
   }
 }
 
@@ -1077,6 +1105,8 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
 			// console.log("last --",lastLogRefDoctype.value)
 		}else{
 			isCheckOut=false;
+      statusMessage.value = "Face Matched"
+    	statusColor.value = "green"
 			// faceMatched = true;
 			// ✅ OUT → verify boundary using last check-in coordinates
 			// console.log("Last Log",lastLog.value);
@@ -1102,6 +1132,7 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
 			} else {
 				statusMessage.value = "You Are Outside The  Allowed Boundary";
 				statusColor.value = "red";
+        isValidLocation=false;
 			}
 		}
 		}
@@ -1110,6 +1141,7 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
 	faceMatched = false;
 	statusMessage.value = `Not Matched (distance: ${distance.toFixed(3)})`;
 	statusColor.value = "red";
+  isValidLocation=false;
 }
 
 
@@ -1374,6 +1406,8 @@ currentLogRefName.value=refDocDN
 		},
 		{
 		async onSuccess(doc) {
+      modalController.dismiss()
+			stopCamera()
 			const checkinId = doc.name
 			
 			currentCheckINID.value=checkinId;
@@ -1381,9 +1415,8 @@ currentLogRefName.value=refDocDN
 					await uploadCapturedImage(doc.name, capturedImage)
 				}
         isCheckinModalOpen.value = false;
-				modalController.dismiss()
-				stopCamera()
-				if (field_employee.value === 'Yes' && actionLabel === 'Check-in') {
+				// if (field_employee.value === 'Yes' && actionLabel === 'Check-in') {
+        if (field_employee.value === 'Yes' && actionLabel === 'Check-in' && !forgetCheckOut.value) {
 
 						const now = new Date();
 
@@ -1403,7 +1436,9 @@ currentLogRefName.value=refDocDN
 
 						
 					}
-
+        
+        isSalesFaceMatched = false;
+        forgetCheckOut.value = false;
 				toast({
 					title: __("Success"),
 					text: __("{0} successful!", [actionLabel]),

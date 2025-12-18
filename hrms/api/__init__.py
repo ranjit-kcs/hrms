@@ -105,6 +105,9 @@ def get_all_wfh():
     wfh_records = frappe.get_all(
         "Employee WFH",
         fields="*",  # fetch all fields from parent
+		filters= {
+			"docstatus": 1
+		},
         order_by="creation desc",
         limit=999999,
     )
