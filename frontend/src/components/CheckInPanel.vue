@@ -562,6 +562,7 @@ let OpportunityOptions=ref([])
 
 let lastLogRefDoctype=ref(null)
 let lastLogRefName=ref(null)
+let lastLogRefTime=ref(null)
 
 let currentLogRefDoctype=ref(null)
 let currentLogRefName=ref(null)
@@ -1099,9 +1100,15 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
 			faceMatched = true;
 			isCheckOut=true;
 			// console.log("Last Log",lastLog.value);
-			lastLogRefDoctype.value=lastLog.value.reference_dt
-			lastLogRefName.value=lastLog.value.reference_dn
-			lastCheckOutID.value=lastLog.value.name;
+			// lastLogRefDoctype.value=lastLog.value.reference_dt
+			// lastLogRefName.value=lastLog.value.reference_dn
+			// lastCheckOutID.value=lastLog.value.name;
+      if(lastLog.value){
+        lastLogRefDoctype.value=lastLog.value.reference_dt
+        lastLogRefName.value=lastLog.value.reference_dn
+        lastCheckOutID.value=lastLog.value.name;
+        lastLogRefTime.value = lastLog.value?.time?.slice(0, 10) || "";
+      }
 			// console.log("last --",lastLogRefDoctype.value)
 		}else{
 			isCheckOut=false;
@@ -1428,7 +1435,8 @@ currentLogRefName.value=refDocDN
 
 
 
-						const lastDate = lastLog.value.time.split(" ")[0];
+						// const lastDate = lastLog.value.time.split(" ")[0];
+            const lastDate = lastLogRefTime.value;
 						
 						if(lastDate===formattedDateTime){
 							CreateCheckInJoureny();

@@ -110,6 +110,7 @@ import { inject, reactive, ref } from "vue"
 import { Input, Button, ErrorMessage, Dialog, createResource } from "frappe-ui"
 
 import FrappeHRLogo from "@/components/icons/FrappeHRLogo.vue"
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
 
 const email = ref(null)
 const password = ref(null)
@@ -129,38 +130,112 @@ const otp = reactive({
 const session = inject("$session")
 const __ = inject("$translate")
 
+async function getDeviceId() {
+	let id = localStorage.getItem("hrms_device_id");
+
+	if (id) return id;
+
+	const fp = await FingerprintJS.load();
+	const result = await fp.get();
+	id = result.visitorId;
+
+	localStorage.setItem("hrms_device_id", id);
+
+	return id;
+}
 async function submit(e) {
 	try {
-		let response
+		const deviceId = await getDeviceId();
+		let response;
+
 		if (otp.showDialog) {
-			response = await session.otp(otp.tmp_id, otp.code)
+			response = await session.otp(otp.tmp_id, otp.code);
 		} else {
-			response = await session.login(email.value, password.value)
+			let r = await fetch("/api/method/hrms.api.custom_login.login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					email: email.value,
+					password: password.value,
+					device_id: deviceId,
+				}),
+			});
+
+			let json = await r.json();
+
+			// HANDLE FRAPPE ERROR MESSAGES
+if (json._server_messages) {
+    try {
+        let msgList = JSON.parse(json._server_messages);
+        let firstMsg = JSON.parse(msgList[0]);
+        errorMessage.value = firstMsg.message;
+    } catch (e) {
+        errorMessage.value = "Login failed.";
+    }
+    return;
+}
+
+// HANDLE PYTHON throw ERROR
+if (json.exc || json.exception) {
+    errorMessage.value = json.message || "Something went wrong.";
+    return;
+}
+
+// Handle Invalid Credentials & Device Error
+if (json.message && typeof json.message === "string") {
+    if (
+        json.message.includes("Invalid credentials")
+        || json.message.includes("already logged in")
+    ) {
+        errorMessage.value = json.message;
+        return;
+    }
+}
+
+
+			if (json.exc_type === "ValidationError") {
+				errorMessage.value = json.message;
+				return;
+			}
+
+			response = json.message;
 		}
 
 		if (response.message === "Password Reset") {
-			resetPassword.showDialog = true
-			resetPassword.link = response.redirect_to
+			resetPassword.showDialog = true;
+			resetPassword.link = response.redirect_to;
 		} else {
-			resetPassword.showDialog = false
-			resetPassword.link = ""
+			resetPassword.showDialog = false;
+			resetPassword.link = "";
 		}
 
 		// OTP verification
 		if (response.verification) {
 			if (response.verification.setup) {
-				otp.showDialog = true
-				otp.tmp_id = response.tmp_id
-				otp.verification = response.verification
+				otp.showDialog = true;
+				otp.tmp_id = response.tmp_id;
+				otp.verification = response.verification;
 			} else {
-				// Don't bother handling impossible OTP setup (e.g. no phone number).
-				window.open("/login?redirect-to=" + encodeURIComponent(window.location.pathname), "_blank")
+				window.open("/login?redirect-to=" + encodeURIComponent(window.location.pathname), "_blank");
 			}
 		}
+
+		// SUCCESS LOGIN → REDIRECT
+		if (response.status === "first_login" || response.status === "device_match") {
+			window.location.href = "/hrms/home";
+			return;
+		}
+
 	} catch (error) {
-		errorMessage.value = error.messages.join("\n")
+		// 🔥 FIXED ERROR HANDLING HERE
+		if (error.messages) {
+			errorMessage.value = error.messages.join("\n");
+		} else {
+			errorMessage.value = "Login failed. Try again.";
+		}
 	}
 }
+
 
 const authProviders = createResource({
 	url: "hrms.api.oauth.oauth_providers",
