@@ -842,6 +842,23 @@ const handleEmployeeCheckin = () => {
     alert("Key is Missing");
     return; // ❌ modal never opens
   }
+  if (!distance_url) {
+  alert("distance_url value is missing");
+  return;
+} 
+ if (!location_url) {
+  alert("location_url value is missing");
+  return;
+} 
+ if (!distance_response) {
+  alert("distance_response value is missing");
+  return;
+} 
+ if (!location_response) {
+  alert("location_response value is missing");
+  return;
+} 
+
   checkinTimestamp.value = dayjs().format("YYYY-MM-DD HH:mm:ss");
   if (settings.data?.allow_geolocation_tracking) {
     fetchLocation();
@@ -1336,10 +1353,33 @@ async function initAzure() {
   }
 
   const url_config=await getRuntimeURLConfig();
-  distance_url=url_config.distance_url;
-  location_url=url_config.location_url; 
-  distance_response=url_config.distance_response;
-  location_response=url_config.location_response;
+  // distance_url=url_config.distance_url;
+  // location_url=url_config.location_url; 
+  // distance_response=url_config.distance_response;
+  // location_response=url_config.location_response;
+//   if (!url_config.distance_url) {
+//   alert("distance_url value is missing");
+//   return;
+// } 
+//  if (!url_config.location_url) {
+//   alert("location_url value is missing");
+//   return;
+// } 
+//  if (!url_config.distance_response) {
+//   alert("distance_response value is missing");
+//   return;
+// } 
+//  if (!url_config.location_response) {
+//   alert("location_response value is missing");
+//   return;
+// } 
+  
+distance_url = url_config.distance_url;
+  location_url = url_config.location_url;
+  distance_response = url_config.distance_response;
+  location_response = url_config.location_response;
+
+
   // console.log(distance_url);
   // console.log(distance_response);
   // console.log(location_url);
