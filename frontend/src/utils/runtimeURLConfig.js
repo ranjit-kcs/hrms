@@ -1,6 +1,6 @@
-export async function getRuntimeConfig() {
+export async function getRuntimeURLConfig() {
   const res = await fetch(
-    "/api/method/hrms.api.runtime_config.get_frontend_config",
+    "/api/method/hrms.api.runtime_config.get_map_urls",
     {
       credentials: "include",
       cache: "no-cache"

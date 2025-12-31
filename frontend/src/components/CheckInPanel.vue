@@ -100,7 +100,7 @@
 							autoplay
 							playsinline
 							muted
-							class="rounded-lg border border-gray-400 bg-black "
+							class="rounded-lg border border-gray-400 bg-black camera"
 						></video>
 					</div>
 				</div>
@@ -118,7 +118,7 @@
 					Check Photo
 				</Button> -->
 			</div>
-<div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4" v-if="nextAction.action === 'IN'">
+<div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4" v-if="nextAction.action === 'IN' || !isValidLocation">
   <div v-if="field_employee==='Yes' && isCheckOut">
     <label class="form-label text-xs">Type</label>
     <FormControl
@@ -255,7 +255,7 @@
 				{{ __("Confirm {0}", [nextAction.label]) }}
 			</Button>
       <Button
-			v-if="isSalesFaceMatched && forgetCheckOut && isValidLocation"
+			v-if="isSalesFaceMatched && forgetCheckOut && !isValidLocation"
 				:loading="checkins.insert.loading"
 				variant="solid"
 				class="w-full py-5 text-sm disabled:bg-gray-700"
@@ -526,6 +526,7 @@ import { formatTimestamp } from "@/utils/formatters"
 import * as faceapi from "face-api.js"
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { getRuntimeConfig } from "@/utils/runtimeConfig";
+import { getRuntimeURLConfig } from "../utils/runtimeURLConfig"
 
 
 const video = ref(null)
@@ -547,6 +548,13 @@ let device_id=ref("")
 let locationDescription=ref("")
 const isCheckinModalOpen = ref(false)
 let azure_key = ref("")
+let distance_url = ref("")
+let distance_response = ref("")
+
+let location_url = ref("")
+let location_response = ref("")
+
+
 
 
 // let typeofCheckIn=ref("")
@@ -568,6 +576,9 @@ let currentLogRefDoctype=ref(null)
 let currentLogRefName=ref(null)
 let currentCheckINID=ref(null)
 let lastCheckOutID=ref(null)
+let lastLogLat=ref(null)
+let lastLogLan=ref(null)
+
 
 
 const DOCTYPE = "Employee Checkin"
@@ -774,11 +785,29 @@ const lastLogType = computed(() => {
 	return lastLog?.value?.log_type === "IN" ? "check-in" : "check-out"
 })
 
+// const nextAction = computed(() => {
+//   console.log("Last Log",lastLog?.value);
+// 	return lastLog?.value?.log_type === "IN"
+// 		? { action: "OUT", label: __("Check Out") }
+// 		: { action: "IN", label: __("Check In") }
+// })
 const nextAction = computed(() => {
-	return lastLog?.value?.log_type === "IN"
-		? { action: "OUT", label: __("Check Out") }
-		: { action: "IN", label: __("Check In") }
-})
+  const log = lastLog?.value;
+  if (!log || !log.time) {
+    return { action: "IN", label: __("Check In") };
+  }
+
+  const lastLogDate = log.time.split(" ")[0]; // YYYY-MM-DD
+  const todayDate = new Date().toISOString().split("T")[0];
+
+  // If last log was IN but not today → forgot checkout → allow Check In
+  if (log.log_type === "IN" && lastLogDate === todayDate) {
+    return { action: "OUT", label: __("Check Out") };
+  }
+
+  return { action: "IN", label: __("Check In") };
+});
+
 
 function handleLocationSuccess(position) {
 	latitude.value = position.coords.latitude
@@ -829,7 +858,8 @@ async function onModalOpen() {
 	// console.log("Empolyee",employee)
 	// console.log("User",user)
 	// console.log("Wfh",wfh)
-	// console.log("Geofence",geofence)
+	// console.log("Geofence",geofence.data.length);
+  
 	
 
 	
@@ -846,7 +876,12 @@ if (user?.data?.user_image) {
 
 	img.onload = async () => {
 		const detection = await faceapi
-			.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+			.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions(
+        {
+          inputSize: 160,   // 🔥 critical
+  scoreThreshold: 0.5
+        }
+      ))
 			.withFaceLandmarks()
 			.withFaceDescriptor();
 
@@ -885,8 +920,16 @@ function onModalClose() {
 
 async function startCamera() {
 	try {
-		stream = await navigator.mediaDevices.getUserMedia({ video: true })
+    
+		stream = await navigator.mediaDevices.getUserMedia({ video: {
+      // facingMode: { exact: "environment" }, 
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 15, max: 20 }
+      }
+     })
 		video.value.srcObject = stream
+    video.value.style.transform = "scaleX(1)" 
 	} catch (err) {
 		console.error("Camera access error:", err)
 		statusMessage.value = "Camera blocked or unavailable"
@@ -916,6 +959,7 @@ async function loadModels() {
 
 
 async function startComparison() {
+  let detection;
 	if (!modelsLoaded) {
 		statusMessage.value = "Models not loaded!"
 		statusColor.value = "red"
@@ -939,10 +983,19 @@ const BLINK_THRESHOLD = 0.27;
 
 comparisonInterval = setInterval(async () => {
 
-const detection = await faceapi
-  .detectSingleFace(video.value, new faceapi.TinyFaceDetectorOptions())
+
+
+
+ detection = await faceapi
+  .detectSingleFace(video.value, new faceapi.TinyFaceDetectorOptions(
+    {
+      inputSize: 160,   // 🔥 critical
+  scoreThreshold: 0.5
+    }
+  ))
   .withFaceLandmarks()
   .withFaceDescriptor()
+
 
 if (!detection) {
   statusMessage.value = "No face in camera!"
@@ -952,8 +1005,24 @@ if (!detection) {
 }
 
 // 1️⃣ Blink Check
-const ear = getEAR(detection.landmarks)
+const detectorOptions = new faceapi.TinyFaceDetectorOptions({
+  inputSize: 160,   // 🔥 critical
+  scoreThreshold: 0.5
+})
+
+
 if (!blinkDetected) {
+
+  detection = await faceapi
+    .detectSingleFace(video.value, detectorOptions)
+    .withFaceLandmarks()
+  .withFaceDescriptor()
+
+  if (!detection) {
+    statusMessage.value = "No face in camera"
+    return
+  }
+const ear = getEAR(detection.landmarks)
   if (ear < BLINK_THRESHOLD) {
     blinkDetected = true
 	
@@ -964,6 +1033,14 @@ if (!blinkDetected) {
     statusColor.value = "orange"
     return
   }
+  // Phase 2: Descriptor ONLY after blink
+  detection = await faceapi
+  .detectSingleFace(video.value, detectorOptions)
+  .withFaceLandmarks()
+  .withFaceDescriptor()
+
+if (!detection) return
+
 }
 
 
@@ -1083,6 +1160,11 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
     }
   } else {
     faceMatched = false;
+    if(geofence.data.length===0){
+statusMessage.value = "Geofence is Missing, Contact ur HR" //Camera ready. Upload reference image.
+	statusColor.value = "red"
+  return
+  }
     statusMessage.value = "Matched but Outside Allowed Office Boundary";
     statusColor.value = "red";
     isValidLocation=false;
@@ -1107,6 +1189,10 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
         lastLogRefDoctype.value=lastLog.value.reference_dt
         lastLogRefName.value=lastLog.value.reference_dn
         lastCheckOutID.value=lastLog.value.name;
+        lastLogLat.value=lastLog.value.latitude;
+        lastLogLan.value=lastLog.value.longitude;
+//         console.log("expectedLat",lastLogLat.value)
+// console.log("expectedLon",lastLogLan.value)
         lastLogRefTime.value = lastLog.value?.time?.slice(0, 10) || "";
       }
 			// console.log("last --",lastLogRefDoctype.value)
@@ -1120,6 +1206,8 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
 			lastLogRefDoctype.value=lastLog.value.reference_dt
 			lastLogRefName.value=lastLog.value.reference_dn
 			lastCheckOutID.value=lastLog.value.name;
+      lastLogLat.value=lastLog.value.latitude;
+      lastLogLan.value=lastLog.value.longitude;
 			// console.log("last --",lastLogRefDoctype.value)
 
 			const lastLat = parseFloat(lastLog.value.latitude);
@@ -1140,6 +1228,7 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
 				statusMessage.value = "You Are Outside The  Allowed Boundary";
 				statusColor.value = "red";
         isValidLocation=false;
+        isCheckOut=true;
 			}
 		}
 		}
@@ -1153,7 +1242,7 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
 
 
 
-}, 1000)
+}, 1200)
 
 }
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
@@ -1245,11 +1334,35 @@ async function initAzure() {
     console.warn("Azure key missing in System Settings");
     return;
   }
+
+  const url_config=await getRuntimeURLConfig();
+  distance_url=url_config.distance_url;
+  location_url=url_config.location_url; 
+  distance_response=url_config.distance_response;
+  location_response=url_config.location_response;
+  // console.log(distance_url);
+  // console.log(distance_response);
+  // console.log(location_url);
+  // console.log(location_response);
+}
+
+function buildUrl(template, replacements) {
+  let url = template;
+  for (const key in replacements) {
+    url = url.replace(new RegExp(`\\$\\{${key}\\}`, "g"), replacements[key]);
+  }
+  return url;
 }
 
 
-
 async function getDistanceInMeters(currentLat, currentLon, expectedLat, expectedLon) {
+
+// console.log("currentLat",currentLat)
+// console.log("currentLon",currentLon)
+// console.log("expectedLat",expectedLat)
+// console.log("expectedLon",expectedLon)
+
+
   const key = azure_key 
 
   if (!key) {
@@ -1259,18 +1372,28 @@ async function getDistanceInMeters(currentLat, currentLon, expectedLat, expected
     onModalClose()
   }
 
-  console.log("Using Azure Key:", key);
+  // console.log("Using Azure Key:", key);
 
 //   expectedLat = 12.8742
 //   expectedLon= 77.5569
 
-  const url = `https://atlas.microsoft.com/route/directions/json?api-version=1.0&subscription-key=${key}&query=${currentLat},${currentLon}:${expectedLat},${expectedLon}`;
-
+  // const url = `https://atlas.microsoft.com/route/directions/json?api-version=1.0&subscription-key=${key}&query=${currentLat},${currentLon}:${expectedLat},${expectedLon}`;
+const url = buildUrl(distance_url, {
+    key,
+    currentLat,
+    currentLon,
+    expectedLat,
+    expectedLon
+  });
   try {
     const response = await fetch(url);
     const data = await response.json();
 
-    const distance = data?.routes?.[0]?.summary?.lengthInMeters;
+    const distance = getValueByPath(data, distance_response);
+    console.log("Distance ",distance);
+
+    // const distance = data?.distance_response;
+
 
     if (!distance && distance !== 0) {
     //   console.error("Invalid Distance Response:", data);
@@ -1285,40 +1408,152 @@ async function getDistanceInMeters(currentLat, currentLon, expectedLat, expected
   }
 }
 
+function getValueByPath(obj, path) {
+  //  console.log("Resolving path:", path);
+  if (!obj || !path || typeof path !== "string") return null;
+
+  const cleanPath = path.replace(/\?\./g, ".");
+
+  return cleanPath
+    .replace(/\[(\d+)\]/g, ".$1")
+    .split(".")
+    .filter(Boolean)
+    .reduce((o, k) => (o && k in o ? o[k] : null), obj);
+}
+
+
 async function getLocationAPI(currentLat, currentLon) {
-  const key = azure_key
-
-  if (!key) {
-    console.warn("Azure Key missing");
-    stopCamera()
-    alert("Please add the key in the system settings");
-    return null;
-  }
-
-  const url = `https://atlas.microsoft.com/search/address/reverse/json?api-version=1.0&subscription-key=${key}&query=${currentLat},${currentLon}`;
+  const csrfToken =
+    frappe?.csrf_token ||
+    window?.csrf_token ||
+    getCookie("csrf_token");
 
   try {
-    const response = await fetch(url);
-    const data = await response.json();
+    /* ------------------------------------------------
+       1. Check if location already exists (Frappe)
+    ------------------------------------------------ */
+    const frappeResp = await fetch(
+      `/api/method/hrms.api.api.find_location_by_latlon?lat=${currentLat}&lon=${currentLon}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Frappe-CSRF-Token": csrfToken
+        }
+      }
+    );
 
-	locationDescription.value=data.addresses[0].address.freeformAddress;
+    const frappeResult = await frappeResp.json();
+    //  console.log("Frappe Result:", frappeResult);
 
-    
-  } catch (err) {
-    console.error("Azure Distance API Error:", err);
-    
+    /* ------------------------------------------------
+       2. If location NOT found → call external API
+    ------------------------------------------------ */
+    if (frappeResult?.message?.found === false) {
+      if (!azure_key) {
+        console.warn("Azure Key missing");
+        stopCamera();
+        alert("Please add the key in the system settings");
+        return null;
+      }
+
+      const url = buildUrl(location_url, {
+        key: azure_key,
+        currentLat,
+        currentLon
+      });
+
+      const apiResp = await fetch(url);
+      const apiData = await apiResp.json();
+
+      const locationResult = getValueByPath(
+        apiData,
+        location_response
+      );
+
+      // console.log("Location Result:", locationResult);
+
+      locationDescription.value = locationResult || "";
+
+      const response = await fetch(
+    "/api/method/hrms.api.api.save_location",
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Frappe-CSRF-Token": csrfToken
+      },
+      body: JSON.stringify({
+        payload: apiData 
+      })
+    }
+  );
+
+  const result = await response.json();
+  // console.log("Save Res",result);
+
+  if (!response.ok) {
+    throw new Error(result?.message || "Failed to save location");
+  }
+  
+  return locationResult;
+
+
+    }
+
+    /* ------------------------------------------------
+       3. Location already exists
+    ------------------------------------------------ */
+    locationDescription.value = frappeResult.message.location || "";
+    return locationDescription.value;
+
+  } catch (error) {
+    console.error("Location API Error:", error);
+    return null;
   }
 }
+
+function formatAddress(data) {
+  if (!data || !data.address) return "";
+
+  const addr = data.address;
+
+  // Dynamically get the value based on addresstype
+  let name = "";
+  if (data.addresstype && addr[data.addresstype]) {
+    name = addr[data.addresstype];
+  } else if (addr.name) {
+    name = addr.name;
+  }
+
+  // Build short address
+  const road = addr.road || "";
+  const suburb = addr.suburb || "";
+  const city = addr.city || "";
+  const state = addr.state || "";
+  const postcode = addr.postcode || "";
+
+  // Concatenate only required fields
+  const parts = [name, road, suburb, city, state, postcode].filter(Boolean);
+
+  // Truncate to 140 chars to avoid Frappe CharacterLengthExceededError
+  return parts.join(", ").substring(0, 140);
+}
+
+
 async function CreateCheckInJoureny(){
 
-	 
+
+
 	const distance = await getDistanceInMeters(
     latitude.value,
     longitude.value,
-    lastLog.value.latitude,
-    lastLog.value.longitude
+    lastLogLat.value,
+    lastLogLan.value
   );
-  const dis_km=0
+  let dis_km=0
   if(distance!==0){
 dis_km = Number((distance / 1000).toFixed(2));
   }
@@ -1447,6 +1682,7 @@ currentLogRefName.value=refDocDN
         
         isSalesFaceMatched = false;
         forgetCheckOut.value = false;
+        isCheckOut=false;
 				toast({
 					title: __("Success"),
 					text: __("{0} successful!", [actionLabel]),
@@ -1778,5 +2014,11 @@ onBeforeUnmount(() => {
   color: white;
   cursor: pointer;
 }
+.camera {
+  transform: scaleX(1) !important;
+  -webkit-transform: scaleX(1) !important;
+}
+
+
 
 </style>

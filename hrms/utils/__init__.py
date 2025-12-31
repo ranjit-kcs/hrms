@@ -70,7 +70,7 @@ def update_frontend_settings(doc, method):
     print("function is working")
 
     # Get value safely
-    value = frappe.db.get_single_value("System Settings", "azure_key_") or ""
+    value = frappe.db.get_single_value("System Settings", "azure_key") or ""
 
     # ✅ WRITE TO SITE PUBLIC FOLDER (NOT apps/)
     file_path = get_site_path("public", "hrms", "settings.env")
