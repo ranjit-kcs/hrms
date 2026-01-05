@@ -105,9 +105,13 @@
 					</div>
 				</div>
 
-				<div class="mt-4 font-semibold text-center" :style="{ color: statusColor }">
-					{{ statusMessage }}
-				</div>
+				<div
+  class="mt-4 font-semibold text-center"
+  :style="{ color: matchMessage ? matchColor : statusColor }"
+>
+  {{ matchMessage || statusMessage }}
+</div>
+
 
 				<!-- <Button
 				v-if="!faceMatched"
@@ -533,12 +537,15 @@ const video = ref(null)
 const referenceImageSrc = ref(null)
 const referenceDescriptor = ref(null)
 const statusMessage = ref("Initializing...")
+const matchMessage = ref("")
+const statusColor = ref("gray")
+const matchColor = ref("green")
+
 
 let faceMatched = false
 let isCheckOut = false
 let isSalesFaceMatched=false
 let isValidLocation=true
-const statusColor = ref("gray")
 let modelsLoaded = false
 let comparisonInterval = null
 let locations = ref([])
@@ -871,6 +878,7 @@ function closeModalAndCamera() {
 
 // ✅ Start camera only when popup opens
 async function onModalOpen() {
+  matchMessage.value="";
 	await loadModels()
 	// console.log("Empolyee",employee)
 	// console.log("User",user)
@@ -926,7 +934,13 @@ if (user?.data?.user_image) {
 
 // 🧹 Stop camera when popup closes
 function onModalClose() {
+  modalController.dismiss()
   stopCamera();
+  isCheckinModalOpen.value=false;
+  matchMessage.value="";
+  isCheckOut=false;
+  // isValidLocation=true;
+  isSalesFaceMatched=false;
   if (comparisonInterval) {
     clearInterval(comparisonInterval);
     comparisonInterval = null;
@@ -1090,6 +1104,8 @@ const wfhRecordForToday = wfh.data.find(item => {
 if (wfhRecordForToday && field_employee.value !== "Yes") {
   faceMatched = true;
   statusMessage.value = "Face Matched (WFH)";
+  matchMessage.value = "Face Matched (WFH)";
+  
   statusColor.value = "green";
 
   // ✅ If IN - directly submit
@@ -1112,6 +1128,8 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
       submitLog(nextAction.value.action);
     } else {
       statusMessage.value ="You Are Outside The Work-From-Home Allowed Boundary";
+      matchMessage.value ="You Are Outside The Work-From-Home Allowed Boundary";
+      
       statusColor.value = "red";
       isValidLocation=false;
     }
@@ -1147,6 +1165,8 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
   if (insideAnyFence) {
     faceMatched = true;
     statusMessage.value = "Face Matched & Inside Allowed Location";
+    matchMessage.value = "Face Matched & Inside Allowed Location";
+    
     statusColor.value = "green";
 
     if (nextAction.value.action === "IN") {
@@ -1170,7 +1190,10 @@ if (wfhRecordForToday && field_employee.value !== "Yes") {
       if (distanceToLastCenter <= lastRadius) {
         submitLog(nextAction.value.action);
       } else {
+        matchMessage.value = "You Are Outside the Boundary";
         statusMessage.value = "You Are Outside the Boundary";
+        
+        
         statusColor.value = "red";
         isValidLocation=false;
       }
@@ -1182,6 +1205,8 @@ statusMessage.value = "Geofence is Missing, Contact ur HR" //Camera ready. Uploa
 	statusColor.value = "red"
   return
   }
+  
+    matchMessage.value = "Matched but Outside Allowed Office Boundary";
     statusMessage.value = "Matched but Outside Allowed Office Boundary";
     statusColor.value = "red";
     isValidLocation=false;
@@ -1194,6 +1219,7 @@ statusMessage.value = "Geofence is Missing, Contact ur HR" //Camera ready. Uploa
 	else{ 
 		if (nextAction.value.action === "IN") {
 			// submitLog(nextAction.value.action);
+			matchMessage.value = "Face Matched"
 			statusMessage.value = "Face Matched"
     		statusColor.value = "green"
 			faceMatched = true;
@@ -1215,6 +1241,7 @@ statusMessage.value = "Geofence is Missing, Contact ur HR" //Camera ready. Uploa
 			// console.log("last --",lastLogRefDoctype.value)
 		}else{
 			isCheckOut=false;
+      matchMessage.value = "Face Matched"
       statusMessage.value = "Face Matched"
     	statusColor.value = "green"
 			// faceMatched = true;
@@ -1242,6 +1269,7 @@ statusMessage.value = "Geofence is Missing, Contact ur HR" //Camera ready. Uploa
 				submitLog(nextAction.value.action);
 
 			} else {
+				matchMessage.value = "You Are Outside The  Allowed Boundary";
 				statusMessage.value = "You Are Outside The  Allowed Boundary";
 				statusColor.value = "red";
         isValidLocation=false;
@@ -1722,6 +1750,7 @@ currentLogRefName.value=refDocDN
         
         isSalesFaceMatched = false;
         forgetCheckOut.value = false;
+        matchMessage.value="";
         isCheckOut=false;
 				toast({
 					title: __("Success"),
