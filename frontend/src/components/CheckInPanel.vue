@@ -1,47 +1,35 @@
 <template>
-	<div class="flex flex-col bg-white rounded w-full py-6 px-4 border-none">
-		<h2 class="text-lg font-bold text-gray-900">
-			{{ __("Hey, {0} 👋", [employee?.data?.first_name]) }}
-			
-		</h2>
-		
-		<template v-if="settings.data?.allow_employee_checkin_from_mobile_app">
-			<div class="font-medium text-sm text-gray-500 mt-1.5" v-if="lastLog">
-				<span>{{ __("Last {0} was at {1}", [__(lastLogType), formatTimestamp(lastLog.time)]) }}</span>
-				<span class="whitespace-pre"> &middot; </span>
-				<router-link :to="{ name: 'EmployeeCheckinListView' }" v-slot="{ navigate }">
-					<span @click="navigate" class="underline">View List</span>
-				</router-link>
-			</div>
-			<Button
-				class="mt-4 mb-1 drop-shadow-sm py-5 text-base"
-				id="open-checkin-modal"
-				@click="handleEmployeeCheckin"
-			>
-				<template #prefix>
-					<FeatherIcon
-						:name="nextAction.action === 'IN' ? 'arrow-right-circle' : 'arrow-left-circle'"
-						class="w-4"
-					/>
-				</template>
-				{{ nextAction.label }}
-			</Button>
-		</template>
+  <div class="flex flex-col bg-white rounded w-full py-6 px-4 border-none">
+    <h2 class="text-lg font-bold text-gray-900">
+      {{ __("Hey, {0} 👋", [employee?.data?.first_name]) }}
 
-		<div v-else class="font-medium text-sm text-gray-500 mt-1.5">
-			{{ dayjs().format("ddd, D MMMM, YYYY") }}
-		</div>
-	</div>
+    </h2>
 
-	<!-- Modal Section -->
-	<ion-modal
-		v-if="settings.data?.allow_employee_checkin_from_mobile_app"
-		ref="modal"
-		:is-open="isCheckinModalOpen"
-		@didPresent="onModalOpen"
-		@didDismiss="onModalClose"
-	>
-	<!-- <ion-modal
+    <template v-if="settings.data?.allow_employee_checkin_from_mobile_app">
+      <div class="font-medium text-sm text-gray-500 mt-1.5" v-if="lastLog">
+        <span>{{ __("Last {0} was at {1}", [__(lastLogType), formatTimestamp(lastLog.time)]) }}</span>
+        <span class="whitespace-pre"> &middot; </span>
+        <router-link :to="{ name: 'EmployeeCheckinListView' }" v-slot="{ navigate }">
+          <span @click="navigate" class="underline">View List</span>
+        </router-link>
+      </div>
+      <Button class="mt-4 mb-1 drop-shadow-sm py-5 text-base" id="open-checkin-modal" @click="handleEmployeeCheckin">
+        <template #prefix>
+          <FeatherIcon :name="nextAction.action === 'IN' ? 'arrow-right-circle' : 'arrow-left-circle'" class="w-4" />
+        </template>
+        {{ nextAction.label }}
+      </Button>
+    </template>
+
+    <div v-else class="font-medium text-sm text-gray-500 mt-1.5">
+      {{ dayjs().format("ddd, D MMMM, YYYY") }}
+    </div>
+  </div>
+
+  <!-- Modal Section -->
+  <ion-modal v-if="settings.data?.allow_employee_checkin_from_mobile_app" ref="modal" :is-open="isCheckinModalOpen"
+    @didPresent="onModalOpen" @didDismiss="onModalClose">
+    <!-- <ion-modal
   v-if="settings.data?.allow_employee_checkin_from_mobile_app"
   ref="modal"
   trigger="open-checkin-modal"
@@ -49,8 +37,8 @@
   @didDismiss="onModalClose"
   class="custom-center-modal"
 > -->
-		<div class="h-120 w-full flex flex-col items-center justify-center gap-5 p-4 mb-5 top-20">
-			<!-- <div class="flex flex-col gap-1.5 mt-2 items-center justify-center">
+    <div class="h-120 w-full flex flex-col items-center justify-center gap-2 p-4 mb-50 top-20">
+      <!-- <div class="flex flex-col gap-1.5 mt-2 items-center justify-center">
 				<div class="font-medium text-md">
 					{{ dayjs(checkinTimestamp).format("hh:mm:ss a") }}
 				</div>
@@ -58,23 +46,19 @@
 					{{ dayjs().format("D MMM, YYYY") }}
 				</div>
 			</div> -->
+      <!-- <div class="flex flex-col items-center justify-center  w-full border border-gray-300 rounded p-4 shadow-xs"> -->
+      <!-- <h3 class="text-lg font-semibold">Face Verification</h3> -->
 
-			
-			<div class="flex flex-col items-center justify-center gap-4 w-full border border-gray-300 rounded p-4 shadow-xs">
-				<!-- <h3 class="text-lg font-semibold">Face Verification</h3> -->
-
-				<div class="flex flex-col md:flex-row gap-6 items-center">
-					
-					<div class="flex flex-col items-center">
-	<!-- <h4 class="font-medium mb-2">Profile Reference</h4> -->
-
-	<!-- <img
+      <div class="flex flex-col md:flex-row  items-center">
+        <!-- <div class="flex flex-col items-center"> -->
+        <!-- <h4 class="font-medium mb-2">Profile Reference</h4> -->
+        <!-- <img
 		v-if="referenceImageSrc"
 		:src="referenceImageSrc"
 		alt="Reference"
 		class="rounded-lg border border-gray-400 w-40 h-40 object-cover"
 	/> -->
-	<!-- <img
+        <!-- <img
 	v-if="referenceImageSrc"
 									
 									:src="referenceImageSrc"
@@ -82,38 +66,37 @@
 									size="xl"
 								/> -->
 
-	<!-- <div v-else class="text-gray-500 italic text-sm">Loading image...</div> -->
-</div>
+        <!-- <div v-else class="text-gray-500 italic text-sm">Loading image...</div> -->
+        <!-- </div> -->
 
-					<!-- <img
+        <!-- <img
 							
 							:src="employee?.data?.image"
 							alt="Reference"
 							class="rounded-lg border border-gray-400 w-40 h-40 object-cover"
 						/> -->
 
-					
-					<div class="flex flex-col items-center">
-						<!-- <h4 class="font-medium mb-2">Live Camera</h4> -->
-						<video
-							ref="video"
-							autoplay
-							playsinline
-							muted
-							class="rounded-lg border border-gray-400 bg-black camera"
-						></video>
-					</div>
-				</div>
 
-				<div
-  class="mt-4 font-semibold text-center"
-  :style="{ color: matchMessage ? matchColor : statusColor }"
+        <div class="flex flex-col items-center">
+          <!-- <h4 class="font-medium mb-2">Live Camera</h4> -->
+          <video ref="video" autoplay playsinline muted
+            class="rounded-lg border border-gray-400 bg-black camera"></video>
+        </div>
+      </div>
+
+      <!-- <div
+  class="font-semibold text-center"
+  
 >
-  {{ matchMessage || statusMessage }}
-</div>
+  
+</div> -->
+      <label class="form-label text-xs" :style="{ color: matchMessage ? matchColor : statusColor }">
+        {{ matchMessage || statusMessage }}
+      </label>
 
 
-				<!-- <Button
+
+      <!-- <Button
 				v-if="!faceMatched"
 					@click="startComparison"
 					variant="solid"
@@ -121,89 +104,59 @@
 					>
 					Check Photo
 				</Button> -->
-			</div>
-<div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4" v-if="nextAction.action === 'IN' || !isValidLocation">
-  <div v-if="field_employee==='Yes' && isCheckOut">
-    <label class="form-label text-xs">Type</label>
-    <FormControl
-      type="autocomplete"
-      :options="[
-        { label: 'Lead', value: 'Lead' },
-        { label: 'Opportunity', value: 'Opportunity' },
-        { label: 'Hospital', value: 'Hospital' },
-        { label: 'CAR', value: 'CAR' }
-      ]"
-      size="sm"
-      variant="outline"
-      placeholder="Select Type"
-      v-model="typeofCheckIn"
-      :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'"
-    />
-  </div>
+      <!-- </div> -->
+      <div class="w-full grid grid-cols-2 md:grid-cols-2 gap-4" v-if="nextAction.action === 'IN' || !isValidLocation">
+        <div v-if="field_employee === 'Yes' && isCheckOut">
+          <label class="form-label text-xs">Type</label>
+          <FormControl type="autocomplete" :options="[
+            { label: 'Lead', value: 'Lead' },
+            { label: 'Opportunity', value: 'Opportunity' },
+            { label: 'Hospital', value: 'Hospital' },
+            { label: 'CAR', value: 'CAR' }
+          ]" size="sm" variant="outline" placeholder="Select Type" v-model="typeofCheckIn"
+            :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'"
+            required />
+        </div>
 
-  <div v-if="typeofCheckIn?.value === 'Lead'">
-    <label class="form-label text-xs" >Lead</label>
-    <FormControl
-      type="autocomplete"
-      :options="leadOptions"
-      size="sm"
-      variant="outline"
-      placeholder="Select Lead"
-      v-model="leadValue"
-      :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'"
-    />
-  </div>
-    
-
-
-  <div v-if="typeofCheckIn?.value === 'Opportunity'">
-    <label class="form-label text-xs" >Opportunity</label>
-    <FormControl
-      type="autocomplete"
-      :options="OpportunityOptions"
-      size="sm"
-      variant="outline"
-      placeholder="Select Opportunity"
-      v-model="opportunityValue"
-      :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'"
-    />
-  </div>
-
-  <div v-if="typeofCheckIn?.value === 'Hospital'">
-    <label class="form-label text-xs" >Hospital</label>
-    <FormControl
-      type="autocomplete"
-      :options="HospitalOptions"
-      size="sm"
-      variant="outline"
-      placeholder="Select Hospital"
-      v-model="hospitalValue"
-      :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'"
-    />
-  </div>
-
-  <div v-if="typeofCheckIn?.value === 'CAR'">
-    <label class="form-label text-xs">CAR</label>
-    <FormControl
-      type="autocomplete"
-      :options="CarOptions"
-      size="sm"
-      variant="outline"
-      placeholder="Select CAR"
-      v-model="carValue"
-      :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'"
-    />
-  </div>
-</div>
+        <div v-if="typeofCheckIn?.value === 'Lead'">
+          <label class="form-label text-xs">Lead</label>
+          <FormControl type="autocomplete" :options="leadOptions" size="sm" variant="outline" placeholder="Select Lead"
+            v-model="leadValue" required
+            :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'" />
+        </div>
 
 
 
-			<template v-if="settings.data?.allow_geolocation_tracking">
-				<span v-if="locationStatus" class="font-medium text-gray-500 text-sm">
-					{{ locationStatus }}
-				</span>
+        <div v-if="typeofCheckIn?.value === 'Opportunity'">
+          <label class="form-label text-xs">Opportunity</label>
+          <FormControl type="autocomplete" :options="OpportunityOptions" size="sm" variant="outline"
+            placeholder="Select Opportunity" v-model="opportunityValue"
+            :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'" />
+        </div>
 
-				<!-- <div class="rounded border-4 translate-z-0 block overflow-hidden w-full h-170">
+        <div v-if="typeofCheckIn?.value === 'Hospital'">
+          <label class="form-label text-xs">Hospital</label>
+          <FormControl type="autocomplete" :options="HospitalOptions" size="sm" variant="outline"
+            placeholder="Select Hospital" v-model="hospitalValue"
+            :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'" />
+        </div>
+
+        <div v-if="typeofCheckIn?.value === 'CAR'">
+          <label class="form-label text-xs">CAR</label>
+          <FormControl type="autocomplete" :options="CarOptions" size="sm" variant="outline" placeholder="Select CAR"
+            v-model="carValue"
+            :input-class="'bg-gray-100 border border-blue-500 text-gray-800 focus:ring-blue-500 focus:border-blue-600'" />
+        </div>
+      </div>
+
+
+
+      <template v-if="settings.data?.allow_geolocation_tracking">
+        <span v-if="locationStatus" class="text-gray-900 text-xs">
+          {{ locationStatus }}
+        </span>
+
+        <!-- <div class="rounded border-4 translate-z-0 block overflow-hidden w-full h-170">
 					<iframe
 						width="100%"
 						height="170"
@@ -215,23 +168,18 @@
 						:src="`https://maps.google.com/maps?q=${latitude},${longitude}&hl=en&z=15&amp;output=embed`"
 					></iframe>
 				</div> -->
-			</template>
-			<!-- <Checkbox
+      </template>
+      <!-- <Checkbox
 			v-if="nextAction.action ==='OUT'"
     size="sm"
     :value="true"
     v-model="forgetCheckOut"
     label="Forget to CheckOut"
   /> -->
-  <Checkbox
-			v-if="nextAction.action ==='OUT' && isSalesFaceMatched"
-    size="sm"
-    :value="true"
-    v-model="forgetCheckOut"
-    label="Forget to CheckOut"
-  />
-  <!-- faceMatched === true &&  -->
-			<!-- <Button
+      <Checkbox v-if="nextAction.action === 'OUT' && isSalesFaceMatched" size="sm" :value="true" v-model="forgetCheckOut"
+        label="Forget to CheckOut" />
+      <!-- faceMatched === true &&  -->
+      <!-- <Button
 			v-if="field_employee==='Yes' && isSalesFaceMatched && nextAction.action==='IN'"
 				:loading="checkins.insert.loading"
 				variant="solid"
@@ -249,29 +197,20 @@
 			>
 				{{ __("Confirm Check-out") }}
 			</Button> -->
-      <Button
-			v-if="field_employee==='Yes' && isSalesFaceMatched && !forgetCheckOut && nextAction.action==='IN'"
-				:loading="checkins.insert.loading"
-				variant="solid"
-				class="w-full py-5 text-sm disabled:bg-gray-700"
-				@click="submitLog(nextAction.action)"
-			>
-				{{ __("Confirm {0}", [nextAction.label]) }}
-			</Button>
-      <Button
-			v-if="isSalesFaceMatched && forgetCheckOut && !isValidLocation"
-				:loading="checkins.insert.loading"
-				variant="solid"
-				class="w-full py-5 text-sm disabled:bg-gray-700"
-				@click="submitLog('IN')"
-			>
-				{{ __("Confirm Check-In") }}
-			</Button>
-		</div>
-	</ion-modal>
+      <Button v-if="field_employee === 'Yes' && isSalesFaceMatched && !forgetCheckOut && nextAction.action === 'IN'"
+        :loading="checkins.insert.loading" variant="solid" class="w-full py-5 text-sm disabled:bg-gray-700 mb-50"
+        @click="fieldsCheckIn">
+        {{ __("Confirm {0}", [nextAction.label]) }}
+      </Button>
+      <Button v-if="isSalesFaceMatched && forgetCheckOut && !isValidLocation" :loading="checkins.insert.loading"
+        variant="solid" class="w-full py-5 text-sm disabled:bg-gray-700 mb-30" @click="fieldsForgetCheckIn">
+        {{ __("Confirm Check-In") }}
+      </Button>
+    </div>
+  </ion-modal>
 
-<!-- Create Lead Popup -->
-<!-- <div v-if="showLeadModal" class="popup-overlay">
+  <!-- Create Lead Popup -->
+  <!-- <div v-if="showLeadModal" class="popup-overlay">
   <div class="popup-container">
 
     <div class="popup-header">
@@ -297,33 +236,34 @@
   </div>
 </div> -->
 
-<IonModal :is-open="showLeadModal" @didDismiss="showLeadModal = false" class="lead-modal ios modal-default show-modal">
-  <div class="p-4 w-full   ">
+  <IonModal :is-open="showLeadModal" @didDismiss="showLeadModal = false"
+    class="lead-modal ios modal-default show-modal">
+    <div class="p-4 w-full   ">
 
-    <h2 class="text-lg font-semibold mb-2">Create Lead</h2>
+      <h2 class="text-lg font-semibold mb-2">Create Lead</h2>
 
-<div class="grid grid-cols-1 md:grid-cols-1 gap-2">
+      <div class="grid grid-cols-1 md:grid-cols-1 gap-2">
 
-  <div>
-    <label class="text-xs font-medium text-gray-700">Salutation</label>
-    <select v-model="newLead.salutation"
-      class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0">
-      <option value="">Select</option>
-	  <option>Dr</option>
-      <option>Mr</option>
-      <option>Ms</option>
-      <option>Mrs</option>
-      <option>Miss</option>
-    </select>
-  </div>
+        <div>
+          <label class="text-xs font-medium text-gray-700">Salutation</label>
+          <select v-model="newLead.salutation"
+            class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0">
+            <option value="">Select</option>
+            <option>Dr</option>
+            <option>Mr</option>
+            <option>Ms</option>
+            <option>Mrs</option>
+            <option>Miss</option>
+          </select>
+        </div>
 
-  <div>
-    <label class="text-xs font-medium text-gray-700">First Name</label>
-    <input type="text" v-model="newLead.first_name"
-      class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0" />
-  </div>
+        <div>
+          <label class="text-xs font-medium text-gray-700">First Name</label>
+          <input type="text" v-model="newLead.first_name"
+            class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0" />
+        </div>
 
-  <!-- <div>
+        <!-- <div>
     <label class="text-xs font-medium text-gray-700">Middle Name</label>
     <input type="text" v-model="newLead.middle_name"
       class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0" />
@@ -346,19 +286,19 @@
     </select>
   </div> -->
 
-  <div>
-    <label class="text-xs font-medium text-gray-700">Mobile No</label>
-    <input type="text" v-model="newLead.mobile_no"
-      class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0" />
-  </div>
+        <div>
+          <label class="text-xs font-medium text-gray-700">Mobile No</label>
+          <input type="text" v-model="newLead.mobile_no"
+            class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0" />
+        </div>
 
-  <!-- <div>
+        <!-- <div>
     <label class="text-xs font-medium text-gray-700">Organization Name</label>
     <input type="text" v-model="newLead.organization"
       class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0" />
   </div> -->
 
-  <!-- <div>
+        <!-- <div>
     <label class="text-xs font-medium text-gray-700">Job Title</label>
     <input type="text" v-model="newLead.job_title"
       class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0" />
@@ -370,63 +310,49 @@
       class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0" />
   </div> -->
 
-</div>
-
-
-
-
-    <div class="flex justify-end gap-3 pt-3">
-      <Button 
-	  :variant="'outline'"
-    :ref_for="true"
-    theme="gray"
-    size="sm"
-	  @click="showLeadModal = false">Cancel</Button>
-      <Button :variant="'solid'"
-    :ref_for="true"
-    theme="gray"
-    size="sm"
-	 @click="createLead">Save</Button>
-    </div>
-
-  </div>
-</IonModal>
-
-<IonModal :is-open="showOpportunityModal" @didDismiss="showOpportunityModal = false" class="lead-modal">
-  <div class="p-4 w-full h-120px">
-
-    <h2 class="text-lg font-semibold mb-3">Create Opportunity</h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-1 gap-2">
-
-      <div>
-        <label class="text-xs font-medium text-gray-700">Lead (Party Name)</label>
-        <!-- <input type="text" v-model="newOpportunity.party_name"
-          class="w-full border border-gray-400 h-8 px-2 rounded text-sm" /> -->
-		 <select
-  v-model="newOpportunity.party_name"
-  class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0"
->
-  <option value="">Select</option>
-
-  <option
-    v-for="lead in leadOptions"
-    :key="lead.value"
-    :value="lead.value"
-  >
-    {{ lead.label }}
-  </option>
-</select>
-
       </div>
 
-      <!-- <div>
+
+
+
+      <div class="flex justify-end gap-3 pt-3">
+        <Button :variant="'outline'" :ref_for="true" theme="gray" size="sm"
+          @click="showLeadModal = false">Cancel</Button>
+        <Button :variant="'solid'" :ref_for="true" theme="gray" size="sm" @click="createLead">Save</Button>
+      </div>
+
+    </div>
+  </IonModal>
+
+  <IonModal :is-open="showOpportunityModal" @didDismiss="showOpportunityModal = false" class="lead-modal">
+    <div class="p-4 w-full h-120px">
+
+      <h2 class="text-lg font-semibold mb-3">Create Opportunity</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-1 gap-2">
+
+        <div>
+          <label class="text-xs font-medium text-gray-700">Lead (Party Name)</label>
+          <!-- <input type="text" v-model="newOpportunity.party_name"
+          class="w-full border border-gray-400 h-8 px-2 rounded text-sm" /> -->
+          <select v-model="newOpportunity.party_name"
+            class="w-full border border-gray-400 h-8 px-2 rounded text-sm focus:border-gray-600 focus:ring-0">
+            <option value="">Select</option>
+
+            <option v-for="lead in leadOptions" :key="lead.value" :value="lead.value">
+              {{ lead.label }}
+            </option>
+          </select>
+
+        </div>
+
+        <!-- <div>
         <label class="text-xs font-medium text-gray-700">Opportunity From</label>
         <input type="text" v-model="newOpportunity.opportunity_from"
           class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
       </div> -->
 
-      <!-- <div>
+        <!-- <div>
         <label class="text-xs font-medium text-gray-700">Opportunity Type</label>
         <input type="text" v-model="newOpportunity.opportunity_type"
           class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
@@ -438,7 +364,7 @@
           class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
       </div> -->
 
-      <!-- <div>
+        <!-- <div>
         <label class="text-xs font-medium text-gray-700">Opportunity Owner</label>
         <input type="text" v-model="newOpportunity.opportunity_owner"
           class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
@@ -450,35 +376,35 @@
           class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
       </div> -->
 
-      <div>
-        <label class="text-xs font-medium text-gray-700">Expected Closing</label>
-        <input type="date" v-model="newOpportunity.expected_closing"
-          class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
+        <div>
+          <label class="text-xs font-medium text-gray-700">Expected Closing</label>
+          <input type="date" v-model="newOpportunity.expected_closing"
+            class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-gray-700">Probability (%)</label>
+          <input type="number" v-model="newOpportunity.probability"
+            class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-gray-700">Opportunity Amount</label>
+          <input type="number" v-model="newOpportunity.opportunity_amount"
+            class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
+        </div>
+
       </div>
 
-      <div>
-        <label class="text-xs font-medium text-gray-700">Probability (%)</label>
-        <input type="number" v-model="newOpportunity.probability"
-          class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
-      </div>
-
-      <div>
-        <label class="text-xs font-medium text-gray-700">Opportunity Amount</label>
-        <input type="number" v-model="newOpportunity.opportunity_amount"
-          class="w-full border border-gray-400 h-8 px-2 rounded text-sm" />
+      <div class="flex justify-end gap-3 pt-3">
+        <Button size="sm" variant="outline" @click="showOpportunityModal = false">Cancel</Button>
+        <Button size="sm" variant="solid" @click="createOpportunity">Save</Button>
       </div>
 
     </div>
+  </IonModal>
 
-    <div class="flex justify-end gap-3 pt-3">
-      <Button size="sm" variant="outline" @click="showOpportunityModal = false">Cancel</Button>
-      <Button size="sm" variant="solid" @click="createOpportunity">Save</Button>
-    </div>
-
-  </div>
-</IonModal>
-
-<!-- <IonModal :is-open="showHospitalModal" @didDismiss="showHospitalModal = false" class="lead-modal">
+  <!-- <IonModal :is-open="showHospitalModal" @didDismiss="showHospitalModal = false" class="lead-modal">
   <div class="p-4 w-full">
 
     <h2 class="text-lg font-semibold mb-3">Create Hospital</h2>
@@ -523,9 +449,9 @@
 </template>
 
 <script setup>
-import { createResource, createListResource, toast, FeatherIcon,Avatar,Autocomplete,FormControl,Checkbox } from "frappe-ui"
+import { createResource, createListResource, toast, FeatherIcon, Avatar, Autocomplete, FormControl, Checkbox } from "frappe-ui"
 import { computed, inject, ref, onMounted, onBeforeUnmount, reactive, watch } from "vue"
-import { IonModal,IonButton, modalController } from "@ionic/vue"
+import { IonModal, IonButton, modalController } from "@ionic/vue"
 import { formatTimestamp } from "@/utils/formatters"
 import * as faceapi from "face-api.js"
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
@@ -544,15 +470,15 @@ const matchColor = ref("green")
 
 let faceMatched = false
 let isCheckOut = false
-let isSalesFaceMatched=false
-let isValidLocation=true
+let isSalesFaceMatched = false
+let isValidLocation = true
 let modelsLoaded = false
 let comparisonInterval = null
 let locations = ref([])
 let stream = null
-let field_employee=ref("")
-let device_id=ref("")
-let locationDescription=ref("")
+let field_employee = ref("")
+let device_id = ref("")
+let locationDescription = ref("")
 const isCheckinModalOpen = ref(false)
 let azure_key = ref("")
 let distance_url = ref("")
@@ -566,25 +492,25 @@ let location_response = ref("")
 
 // let typeofCheckIn=ref("")
 let typeofCheckIn = ref(null)
-let carValue=ref(null)
-let leadValue=ref(null)
-let opportunityValue=ref(null)
-let hospitalValue=ref(null)
-let CarOptions=ref([])
-let leadOptions=ref([])
-let HospitalOptions=ref([])
-let OpportunityOptions=ref([])
+let carValue = ref(null)
+let leadValue = ref(null)
+let opportunityValue = ref(null)
+let hospitalValue = ref(null)
+let CarOptions = ref([])
+let leadOptions = ref([])
+let HospitalOptions = ref([])
+let OpportunityOptions = ref([])
 
-let lastLogRefDoctype=ref(null)
-let lastLogRefName=ref(null)
-let lastLogRefTime=ref(null)
+let lastLogRefDoctype = ref(null)
+let lastLogRefName = ref(null)
+let lastLogRefTime = ref(null)
 
-let currentLogRefDoctype=ref(null)
-let currentLogRefName=ref(null)
-let currentCheckINID=ref(null)
-let lastCheckOutID=ref(null)
-let lastLogLat=ref(null)
-let lastLogLan=ref(null)
+let currentLogRefDoctype = ref(null)
+let currentLogRefName = ref(null)
+let currentCheckINID = ref(null)
+let lastCheckOutID = ref(null)
+let lastLogLat = ref(null)
+let lastLogLan = ref(null)
 
 
 
@@ -594,10 +520,10 @@ const employee = inject("$employee")
 const user = inject("$user")
 const dayjs = inject("$dayjs")
 const __ = inject("$translate")
-const wfh =inject("$wfh")
-const geofence =inject ("$geofence")
-const location =inject("$location")
-const leads =inject("$leads")
+const wfh = inject("$wfh")
+const geofence = inject("$geofence")
+const location = inject("$location")
+const leads = inject("$leads")
 
 
 
@@ -613,13 +539,13 @@ const forgetCheckOut = ref(false);
 const newLead = reactive({
   salutation: "",
   first_name: "",
-//   middle_name: "",
-//   last_name: "",
-//   gender: "",
+  //   middle_name: "",
+  //   last_name: "",
+  //   gender: "",
   mobile_no: "",
-//   organization: "",
-//   request_type:"",
-// job_title:""
+  //   organization: "",
+  //   request_type:"",
+  // job_title:""
 });
 const showOpportunityModal = ref(false);
 const showHospitalModal = ref(false);
@@ -628,9 +554,9 @@ const newOpportunity = reactive({
   party_name: "",
   opportunity_from: "Lead",
   opportunity_type: "",
-//   source: "",
+  //   source: "",
   opportunity_owner: "",
-//   sales_stage: "",
+  //   sales_stage: "",
   expected_closing: "",
   probability: "",
   opportunity_amount: "",
@@ -650,7 +576,7 @@ async function createLead() {
   const payload = {
     first_name: newLead.first_name,
     mobile_no: newLead.mobile_no,
-	salutation:newLead.salutation
+    salutation: newLead.salutation
   };
 
   const response = await fetch(
@@ -669,25 +595,25 @@ async function createLead() {
   const result = await response.json();
 
   if (result.message) {
-	const createdLead = result.message.data; 
-   
+    const createdLead = result.message.data;
+
     // Optional: Clear form
     newLead.first_name = "";
     newLead.mobile_no = "";
-	newLead.salutation="";
-	showLeadModal.value=false;
-	
-	  // Push new Lead into Autocomplete options
-  const newOption = {
-    label:`${createdLead.name} (${createdLead.first_name}, ${createdLead.mobile_no})`,
-    value: createdLead.name,
-  };
-  leadOptions.value = [newOption, ...leadOptions.value];
+    newLead.salutation = "";
+    showLeadModal.value = false;
 
-  // Set selected Lead
-  leadValue.value = newOption;
+    // Push new Lead into Autocomplete options
+    const newOption = {
+      label: `${createdLead.name} (${createdLead.first_name}, ${createdLead.mobile_no})`,
+      value: createdLead.name,
+    };
+    leadOptions.value = [newOption, ...leadOptions.value];
 
-  
+    // Set selected Lead
+    leadValue.value = newOption;
+
+
 
   } else {
     console.error(" Error Creating Lead:", result);
@@ -696,7 +622,7 @@ async function createLead() {
 
 // onMounted(() => {
 //   console.log("working->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>loadazurekey");
-  // loadAzureKey();
+// loadAzureKey();
 // });
 
 async function createOpportunity() {
@@ -705,11 +631,11 @@ async function createOpportunity() {
 
   const payload = {
     party_name: newOpportunity.party_name,
-	opportunity_from:"Lead",
-	opportunity_owner:'',
+    opportunity_from: "Lead",
+    opportunity_owner: '',
     expected_closing: newOpportunity.expected_closing,
     opportunity_amount: newOpportunity.opportunity_amount,
-	probability:newOpportunity.probability
+    probability: newOpportunity.probability
   };
 
   const response = await fetch(
@@ -728,30 +654,30 @@ async function createOpportunity() {
   const result = await response.json();
 
   if (result.message) {
-	const newOpportunityRes = result.message.data; 
-    
+    const newOpportunityRes = result.message.data;
+
     // Optional: Clear form
 
-	
-	  // Push new Lead into Autocomplete options
-  const newOption = {
-    label:`${newOpportunityRes.name} (${newOpportunityRes.opportunity_from}, ${newOpportunityRes.party_name})`,
-    value: newOpportunityRes.name,
-  };
-  OpportunityOptions.value = [newOption, ...OpportunityOptions.value ];
 
-  // Set selected Lead
-  opportunityValue.value = newOption;
+    // Push new Lead into Autocomplete options
+    const newOption = {
+      label: `${newOpportunityRes.name} (${newOpportunityRes.opportunity_from}, ${newOpportunityRes.party_name})`,
+      value: newOpportunityRes.name,
+    };
+    OpportunityOptions.value = [newOption, ...OpportunityOptions.value];
+
+    // Set selected Lead
+    opportunityValue.value = newOption;
 
 
     newOpportunity.party_name = "";
     newOpportunity.opportunity_from = "Lead";
-	newOpportunity.opportunity_owner="";
-	newOpportunity.expected_closing="";
-	newOpportunity.opportunity_amount="";
-	newOpportunity.probability="";
-	
-	showOpportunityModal.value = false;
+    newOpportunity.opportunity_owner = "";
+    newOpportunity.expected_closing = "";
+    newOpportunity.opportunity_amount = "";
+    newOpportunity.probability = "";
+
+    showOpportunityModal.value = false;
 
   } else {
     console.error(" Error Creating Opportunity:", result);
@@ -770,26 +696,26 @@ async function createHospital() {
 
 
 const settings = createResource({
-	url: "hrms.api.get_hr_settings",
-	auto: true,
+  url: "hrms.api.get_hr_settings",
+  auto: true,
 })
 
 
 const checkins = createListResource({
-	doctype: DOCTYPE,
-	fields: ["name", "employee", "employee_name", "log_type", "time", "device_id","location","latitude","longitude","reference_dt","reference_dn"],
-	filters: { employee: employee.data.name },
-	orderBy: "time desc",
+  doctype: DOCTYPE,
+  fields: ["name", "employee", "employee_name", "log_type", "time", "device_id", "location", "latitude", "longitude", "reference_dt", "reference_dn"],
+  filters: { employee: employee.data.name },
+  orderBy: "time desc",
 })
 checkins.reload()
 
 const lastLog = computed(() => {
-	if (checkins.list.loading || !checkins.data) return {}
-	return checkins.data[0]
+  if (checkins.list.loading || !checkins.data) return {}
+  return checkins.data[0]
 })
 
 const lastLogType = computed(() => {
-	return lastLog?.value?.log_type === "IN" ? "check-in" : "check-out"
+  return lastLog?.value?.log_type === "IN" ? "check-in" : "check-out"
 })
 
 // const nextAction = computed(() => {
@@ -817,54 +743,54 @@ const nextAction = computed(() => {
 
 
 function handleLocationSuccess(position) {
-	latitude.value = position.coords.latitude
-	longitude.value = position.coords.longitude
+  latitude.value = position.coords.latitude
+  longitude.value = position.coords.longitude
 
-	locationStatus.value = [
-		__("Latitude: {0}°", [Number(latitude.value).toFixed(5)]),
-		__("Longitude: {0}°", [Number(longitude.value).toFixed(5)]),
-	].join(", ")
+  locationStatus.value = [
+    __("Latitude: {0}°", [Number(latitude.value).toFixed(5)]),
+    __("Longitude: {0}°", [Number(longitude.value).toFixed(5)]),
+  ].join(", ")
 
-	getLocationAPI(latitude.value,longitude.value);
+  getLocationAPI(latitude.value, longitude.value);
 }
 
 function handleLocationError(error) {
-	locationStatus.value = "Unable to retrieve your location"
-	if (error) locationStatus.value += `: ERROR(${error.code}): ${error.message}`
+  locationStatus.value = "Unable to retrieve your location"
+  if (error) locationStatus.value += `: ERROR(${error.code}): ${error.message}`
 }
 
 const fetchLocation = () => {
-	if (!navigator.geolocation) {
-		locationStatus.value = __("Geolocation is not supported by your browser")
-	} else {
-		locationStatus.value = __("Locating...")
-		navigator.geolocation.getCurrentPosition(handleLocationSuccess, handleLocationError)
-	}
+  if (!navigator.geolocation) {
+    locationStatus.value = __("Geolocation is not supported by your browser")
+  } else {
+    locationStatus.value = __("Locating...")
+    navigator.geolocation.getCurrentPosition(handleLocationSuccess, handleLocationError)
+  }
 }
 
 const handleEmployeeCheckin = () => {
   const key = azure_key
-  
+
   if (!key) {
     alert("Key is Missing");
     return; // ❌ modal never opens
   }
   if (!distance_url) {
-  alert("distance_url value is missing");
-  return;
-} 
- if (!location_url) {
-  alert("location_url value is missing");
-  return;
-} 
- if (!distance_response) {
-  alert("distance_response value is missing");
-  return;
-} 
- if (!location_response) {
-  alert("location_response value is missing");
-  return;
-} 
+    alert("distance_url value is missing");
+    return;
+  }
+  if (!location_url) {
+    alert("location_url value is missing");
+    return;
+  }
+  if (!distance_response) {
+    alert("distance_response value is missing");
+    return;
+  }
+  if (!location_response) {
+    alert("location_response value is missing");
+    return;
+  }
 
   checkinTimestamp.value = dayjs().format("YYYY-MM-DD HH:mm:ss");
   if (settings.data?.allow_geolocation_tracking) {
@@ -876,71 +802,88 @@ function closeModalAndCamera() {
   isCheckinModalOpen.value = false;
 }
 
-// ✅ Start camera only when popup opens
-async function onModalOpen() {
-  matchMessage.value="";
-	await loadModels()
-	// console.log("Empolyee",employee)
-	// console.log("User",user)
-	// console.log("Wfh",wfh)
-	// console.log("Geofence",geofence.data.length);
-  
-	
-
-	
-	// Load employee's image automatically
-if (user?.data?.user_image) {
-	referenceImageSrc.value = user.data.user_image
-	// user.data.image.startsWith("http")
-	// 	? user.data.image
-	// 	: `${window.location.origin}${user.data.image}`;
-
-	const img = new Image();
-	img.crossOrigin = "anonymous";
-	img.src = referenceImageSrc.value;
-
-	img.onload = async () => {
-		const detection = await faceapi
-			.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions(
-        {
-          inputSize: 160,   // 🔥 critical
-  scoreThreshold: 0.5
-        }
-      ))
-			.withFaceLandmarks()
-			.withFaceDescriptor();
-
-		if (detection) {
-			referenceDescriptor.value = detection.descriptor; // img map
-			statusMessage.value = "Profile image ready for verification!";
-			statusColor.value = "blue";
-		} else {
-			statusMessage.value = "No face detected in profile image.";
-			statusColor.value = "red";
-		}
-	};
-} else {
-	statusMessage.value = "";
-	// console.log("No profile image found!")
-	statusColor.value = "red";
+function waitForLocation() {
+  return new Promise((resolve) => {
+    const check = setInterval(() => {
+      if (
+        latitude.value !== null &&
+        latitude.value !== undefined &&
+        longitude.value !== null &&
+        longitude.value !== undefined
+      ) {
+        clearInterval(check);
+        resolve(true);
+      }
+    }, 200); // check every 200ms
+  });
 }
 
-	await startCamera()
-	statusMessage.value = "" //Camera ready. Upload reference image.
-	statusColor.value = "green"
+// ✅ Start camera only when popup opens
+async function onModalOpen() {
+  matchMessage.value = "";
+  await loadModels()
+  // console.log("Empolyee",employee)
+  // console.log("User",user)
+  // console.log("Wfh",wfh)
+  // console.log("Geofence",geofence.data.length);
 
-	await startComparison();
+
+
+
+  // Load employee's image automatically
+  if (user?.data?.user_image) {
+    referenceImageSrc.value = user.data.user_image
+    // user.data.image.startsWith("http")
+    // 	? user.data.image
+    // 	: `${window.location.origin}${user.data.image}`;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = referenceImageSrc.value;
+
+    img.onload = async () => {
+      const detection = await faceapi
+        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions(
+          {
+            inputSize: 160,   // 🔥 critical
+            scoreThreshold: 0.5
+          }
+        ))
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (detection) {
+        referenceDescriptor.value = detection.descriptor; // img map
+        statusMessage.value = "Profile image ready for verification!";
+        statusColor.value = "blue";
+      } else {
+        statusMessage.value = "No face detected in profile image.";
+        statusColor.value = "red";
+      }
+    };
+  } else {
+    statusMessage.value = "";
+    // console.log("No profile image found!")
+    statusColor.value = "red";
+  }
+
+  await startCamera()
+  statusMessage.value = "" //Camera ready. Upload reference image.
+  statusColor.value = "green"
+  // WAIT for latitude & longitude before comparison
+  await waitForLocation();
+  await startComparison();
 }
 
 // 🧹 Stop camera when popup closes
 function onModalClose() {
   modalController.dismiss()
   stopCamera();
-  isCheckinModalOpen.value=false;
-  matchMessage.value="";
-  isCheckOut=false;
+  isCheckinModalOpen.value = false;
+  matchMessage.value = "";
+  isCheckOut = false;
   // isValidLocation=true;
-  isSalesFaceMatched=false;
+  isSalesFaceMatched = false;
   if (comparisonInterval) {
     clearInterval(comparisonInterval);
     comparisonInterval = null;
@@ -950,359 +893,361 @@ function onModalClose() {
 }
 
 async function startCamera() {
-	try {
-    
-		stream = await navigator.mediaDevices.getUserMedia({ video: {
-      // facingMode: { exact: "environment" }, 
+  try {
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        // facingMode: { exact: "environment" }, 
         width: { ideal: 640 },
         height: { ideal: 480 },
         frameRate: { ideal: 15, max: 20 }
       }
-     })
-		video.value.srcObject = stream
-    video.value.style.transform = "scaleX(1)" 
-	} catch (err) {
-		console.error("Camera access error:", err)
-		statusMessage.value = "Camera blocked or unavailable"
-		statusColor.value = "red"
-	}
+    })
+    video.value.srcObject = stream
+    // This forces the transform and ignores other CSS rules
+    video.value.style.setProperty("transform", "scaleX(-1)", "important");
+  } catch (err) {
+    console.error("Camera access error:", err)
+    statusMessage.value = "Camera blocked or unavailable"
+    statusColor.value = "red"
+  }
 }
 
 function stopCamera() {
-	if (stream) {
-		stream.getTracks().forEach((track) => track.stop())
-		stream = null
-	}
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop())
+    stream = null
+  }
 }
 
 async function loadModels() {
-	if (modelsLoaded) return
-	const MODEL_URL = "/assets/hrms/models"
-	await Promise.all([
-		faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-		faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-		faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-		
+  if (modelsLoaded) return
+  const MODEL_URL = "/assets/hrms/models"
+  await Promise.all([
+    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
 
-	])
-	modelsLoaded = true
+
+  ])
+  modelsLoaded = true
 }
 
 
 async function startComparison() {
   let detection;
-	if (!modelsLoaded) {
-		statusMessage.value = "Models not loaded!"
-		statusColor.value = "red"
-		return
-	}
-	if (!referenceDescriptor.value) {
-		statusMessage.value = "Employee Photo is Missing, Please Contact your HR or Update the Photo in Octa to User"
-		statusColor.value = "red"
-		return
-	}
+  if (!modelsLoaded) {
+    statusMessage.value = "Models not loaded!"
+    statusColor.value = "red"
+    return
+  }
+  if (!referenceDescriptor.value) {
+    statusMessage.value = "Employee Photo is Missing, Please Contact your HR or Update the Photo in Octa to User"
+    statusColor.value = "red"
+    return
+  }
 
-	statusMessage.value = "Comparing live face..."
-	statusColor.value = "orange"
+  statusMessage.value = "Comparing live face..."
+  statusColor.value = "orange"
 
-	if (comparisonInterval) clearInterval(comparisonInterval)
-	let blinkDetected = false;
-let turnLeftDetected = false;
-let turnRightDetected = false;
+  if (comparisonInterval) clearInterval(comparisonInterval)
+  let blinkDetected = false;
+  let turnLeftDetected = false;
+  let turnRightDetected = false;
 
-const BLINK_THRESHOLD = 0.27;
+  const BLINK_THRESHOLD = 0.27;
 
-comparisonInterval = setInterval(async () => {
-
-
+  comparisonInterval = setInterval(async () => {
 
 
- detection = await faceapi
-  .detectSingleFace(video.value, new faceapi.TinyFaceDetectorOptions(
-    {
+
+
+    detection = await faceapi
+      .detectSingleFace(video.value, new faceapi.TinyFaceDetectorOptions(
+        {
+          inputSize: 160,   // 🔥 critical
+          scoreThreshold: 0.5
+        }
+      ))
+      .withFaceLandmarks()
+      .withFaceDescriptor()
+
+
+    if (!detection) {
+      statusMessage.value = "No face in camera!"
+      statusColor.value = "gray"
+      faceMatched = false
+      return
+    }
+
+    // 1️⃣ Blink Check
+    const detectorOptions = new faceapi.TinyFaceDetectorOptions({
       inputSize: 160,   // 🔥 critical
-  scoreThreshold: 0.5
-    }
-  ))
-  .withFaceLandmarks()
-  .withFaceDescriptor()
+      scoreThreshold: 0.5
+    })
 
 
-if (!detection) {
-  statusMessage.value = "No face in camera!"
-  statusColor.value = "gray"
-  faceMatched = false
-  return
-}
+    if (!blinkDetected) {
 
-// 1️⃣ Blink Check
-const detectorOptions = new faceapi.TinyFaceDetectorOptions({
-  inputSize: 160,   // 🔥 critical
-  scoreThreshold: 0.5
-})
+      detection = await faceapi
+        .detectSingleFace(video.value, detectorOptions)
+        .withFaceLandmarks()
+        .withFaceDescriptor()
 
+      if (!detection) {
+        statusMessage.value = "No face in camera"
+        return
+      }
+      const ear = getEAR(detection.landmarks)
+      if (ear < BLINK_THRESHOLD) {
+        blinkDetected = true
 
-if (!blinkDetected) {
-
-  detection = await faceapi
-    .detectSingleFace(video.value, detectorOptions)
-    .withFaceLandmarks()
-  .withFaceDescriptor()
-
-  if (!detection) {
-    statusMessage.value = "No face in camera"
-    return
-  }
-const ear = getEAR(detection.landmarks)
-  if (ear < BLINK_THRESHOLD) {
-    blinkDetected = true
-	
-    statusMessage.value = "Blink detected"
-    statusColor.value = "green"
-  } else {
-    statusMessage.value = "Please BLINK 👀"
-    statusColor.value = "orange"
-    return
-  }
-  // Phase 2: Descriptor ONLY after blink
-  detection = await faceapi
-  .detectSingleFace(video.value, detectorOptions)
-  .withFaceLandmarks()
-  .withFaceDescriptor()
-
-if (!detection) return
-
-}
-
-
-// 3️⃣ Only after real movement → Compare Face
-const distance = faceapi.euclideanDistance(referenceDescriptor.value, detection.descriptor)
-
-
-
-if (distance < 0.45) {
-	isSalesFaceMatched=true
-	
-const today = new Date().toISOString().split("T")[0];
-
-// ✅ Find WFH record for the logged-in employee that includes today in choose_date
-const wfhRecordForToday = wfh.data.find(item => {
-  // Check if this record belongs to the same employee
-  const sameEmployee = item.employee_wfh_details?.some(
-    detail => detail.employee === employee.data.name
-  );
-
-  // Check if today's date is one of the chosen WFH dates
-  const hasTodayDate = item.choose_date?.some(
-    dateItem => dateItem.date === today
-  );
-
-  return sameEmployee && hasTodayDate;
-});
-
-// ------------------ WFH CASE ------------------
-if (wfhRecordForToday && field_employee.value !== "Yes") {
-  faceMatched = true;
-  statusMessage.value = "Face Matched (WFH)";
-  matchMessage.value = "Face Matched (WFH)";
-  
-  statusColor.value = "green";
-
-  // ✅ If IN - directly submit
-  if (nextAction.value.action === "IN") {
-    submitLog(nextAction.value.action);
-  } else {
-    // ✅ OUT → verify boundary using last check-in coordinates
-    const lastLat = parseFloat(lastLog.value.latitude);
-    const lastLon = parseFloat(lastLog.value.longitude);
-    const defaultRadius = 50;
-
-    const dist = getDistanceFromLatLonInMeters(
-      latitude.value,
-      longitude.value,
-      lastLat,
-      lastLon
-    );
-
-    if (dist <= defaultRadius) {
-      submitLog(nextAction.value.action);
-    } else {
-      statusMessage.value ="You Are Outside The Work-From-Home Allowed Boundary";
-      matchMessage.value ="You Are Outside The Work-From-Home Allowed Boundary";
-      
-      statusColor.value = "red";
-      isValidLocation=false;
-    }
-  }
-
-  return; // ✅ Stop here (no geofence check needed)
-}
-
-
-
-
-
-	if (field_employee.value !== 'Yes') {
-  // ------------------ OFFICE GEOFENCE CASE ------------------
-  const allowedFences = geofence.data[0]?.fence || [];
-  let insideAnyFence = false;
-
-  for (const loc of allowedFences) {
-    const distanceToCenter = getDistanceFromLatLonInMeters(
-      latitude.value,
-      longitude.value,
-      parseFloat(loc.latitude),
-      parseFloat(loc.longitude)
-    );
-
-    if (distanceToCenter <= loc.radius) {
-      insideAnyFence = true;
-      loginlocation.value = loc.location; // store current matched location name
-      break;
-    }
-  }
-
-  if (insideAnyFence) {
-    faceMatched = true;
-    statusMessage.value = "Face Matched & Inside Allowed Location";
-    matchMessage.value = "Face Matched & Inside Allowed Location";
-    
-    statusColor.value = "green";
-
-    if (nextAction.value.action === "IN") {
-      locationDescription.value = '';
-      submitLog(nextAction.value.action);
-    } else {
-      locationDescription.value = '';
-
-      // ✅ OUT → verify boundary using last check-in coordinates
-      const lastLat = parseFloat(lastLog.value.latitude);
-      const lastLon = parseFloat(lastLog.value.longitude);
-      const lastRadius = lastLog.value.radius ? parseFloat(lastLog.value.radius) : 50;
-
-      const distanceToLastCenter = getDistanceFromLatLonInMeters(
-        latitude.value,
-        longitude.value,
-        lastLat,
-        lastLon
-      );
-
-      if (distanceToLastCenter <= lastRadius) {
-        submitLog(nextAction.value.action);
+        statusMessage.value = "Blink detected"
+        statusColor.value = "green"
       } else {
-        matchMessage.value = "You Are Outside the Boundary";
-        statusMessage.value = "You Are Outside the Boundary";
-        
-        
-        statusColor.value = "red";
-        isValidLocation=false;
+        statusMessage.value = "Please BLINK 👀"
+        statusColor.value = "orange"
+        return
       }
+      // Phase 2: Descriptor ONLY after blink
+      detection = await faceapi
+        .detectSingleFace(video.value, detectorOptions)
+        .withFaceLandmarks()
+        .withFaceDescriptor()
+
+      if (!detection) return
+
     }
-  } else {
-    faceMatched = false;
-    if(geofence.data.length===0){
-statusMessage.value = "Geofence is Missing, Contact ur HR" //Camera ready. Upload reference image.
-	statusColor.value = "red"
-  return
-  }
-  
-    matchMessage.value = "Matched but Outside Allowed Office Boundary";
-    statusMessage.value = "Matched but Outside Allowed Office Boundary";
-    statusColor.value = "red";
-    isValidLocation=false;
-  }
-}
+
+
+    // 3️⃣ Only after real movement → Compare Face
+    const distance = faceapi.euclideanDistance(referenceDescriptor.value, detection.descriptor)
 
 
 
-	// sales emp
-	else{ 
-		if (nextAction.value.action === "IN") {
-			// submitLog(nextAction.value.action);
-			matchMessage.value = "Face Matched"
-			statusMessage.value = "Face Matched"
-    		statusColor.value = "green"
-			faceMatched = true;
-			isCheckOut=true;
-			// console.log("Last Log",lastLog.value);
-			// lastLogRefDoctype.value=lastLog.value.reference_dt
-			// lastLogRefName.value=lastLog.value.reference_dn
-			// lastCheckOutID.value=lastLog.value.name;
-      if(lastLog.value){
-        lastLogRefDoctype.value=lastLog.value.reference_dt
-        lastLogRefName.value=lastLog.value.reference_dn
-        lastCheckOutID.value=lastLog.value.name;
-        lastLogLat.value=lastLog.value.latitude;
-        lastLogLan.value=lastLog.value.longitude;
-//         console.log("expectedLat",lastLogLat.value)
-// console.log("expectedLon",lastLogLan.value)
-        lastLogRefTime.value = lastLog.value?.time?.slice(0, 10) || "";
+    if (distance < 0.45) {
+      isSalesFaceMatched = true
+
+      const today = new Date().toISOString().split("T")[0];
+
+      // ✅ Find WFH record for the logged-in employee that includes today in choose_date
+      const wfhRecordForToday = wfh.data.find(item => {
+        // Check if this record belongs to the same employee
+        const sameEmployee = item.employee_wfh_details?.some(
+          detail => detail.employee === employee.data.name
+        );
+
+        // Check if today's date is one of the chosen WFH dates
+        const hasTodayDate = item.choose_date?.some(
+          dateItem => dateItem.date === today
+        );
+
+        return sameEmployee && hasTodayDate;
+      });
+
+      // ------------------ WFH CASE ------------------
+      if (wfhRecordForToday && field_employee.value !== "Yes") {
+        faceMatched = true;
+        statusMessage.value = "Face Matched (WFH)";
+        matchMessage.value = "Face Matched (WFH)";
+
+        statusColor.value = "green";
+
+        // ✅ If IN - directly submit
+        if (nextAction.value.action === "IN") {
+          submitLog(nextAction.value.action);
+        } else {
+          // ✅ OUT → verify boundary using last check-in coordinates
+          const lastLat = parseFloat(lastLog.value.latitude);
+          const lastLon = parseFloat(lastLog.value.longitude);
+          const defaultRadius = 50;
+
+          const dist = getDistanceFromLatLonInMeters(
+            latitude.value,
+            longitude.value,
+            lastLat,
+            lastLon
+          );
+
+          if (dist <= defaultRadius) {
+            submitLog(nextAction.value.action);
+          } else {
+            statusMessage.value = "You Are Outside The Work-From-Home Allowed Boundary";
+            matchMessage.value = "You Are Outside The Work-From-Home Allowed Boundary";
+
+            statusColor.value = "red";
+            isValidLocation = false;
+          }
+        }
+
+        return; // ✅ Stop here (no geofence check needed)
       }
-			// console.log("last --",lastLogRefDoctype.value)
-		}else{
-			isCheckOut=false;
-      matchMessage.value = "Face Matched"
-      statusMessage.value = "Face Matched"
-    	statusColor.value = "green"
-			// faceMatched = true;
-			// ✅ OUT → verify boundary using last check-in coordinates
-			// console.log("Last Log",lastLog.value);
-			lastLogRefDoctype.value=lastLog.value.reference_dt
-			lastLogRefName.value=lastLog.value.reference_dn
-			lastCheckOutID.value=lastLog.value.name;
-      lastLogLat.value=lastLog.value.latitude;
-      lastLogLan.value=lastLog.value.longitude;
-			// console.log("last --",lastLogRefDoctype.value)
-
-			const lastLat = parseFloat(lastLog.value.latitude);
-			const lastLon = parseFloat(lastLog.value.longitude);
-			const defaultRadius = 50;
-
-			const dist = getDistanceFromLatLonInMeters(
-				latitude.value, 
-				longitude.value, 
-				lastLat, 
-				lastLon
-			);
-
-			if (dist <= defaultRadius) {
-				submitLog(nextAction.value.action);
-
-			} else {
-				matchMessage.value = "You Are Outside The  Allowed Boundary";
-				statusMessage.value = "You Are Outside The  Allowed Boundary";
-				statusColor.value = "red";
-        isValidLocation=false;
-        isCheckOut=true;
-			}
-		}
-		}
-
-} else {
-	faceMatched = false;
-	statusMessage.value = `Not Matched (distance: ${distance.toFixed(3)})`;
-	statusColor.value = "red";
-  isValidLocation=false;
-}
 
 
 
-}, 1200)
+
+
+      if (field_employee.value !== 'Yes') {
+        // ------------------ OFFICE GEOFENCE CASE ------------------
+        const allowedFences = geofence.data[0]?.fence || [];
+        let insideAnyFence = false;
+
+        for (const loc of allowedFences) {
+          const distanceToCenter = getDistanceFromLatLonInMeters(
+            latitude.value,
+            longitude.value,
+            parseFloat(loc.latitude),
+            parseFloat(loc.longitude)
+          );
+
+          if (distanceToCenter <= loc.radius) {
+            insideAnyFence = true;
+            loginlocation.value = loc.location; // store current matched location name
+            break;
+          }
+        }
+
+        if (insideAnyFence) {
+          faceMatched = true;
+          statusMessage.value = "Face Matched & Inside Allowed Location";
+          matchMessage.value = "Face Matched & Inside Allowed Location";
+
+          statusColor.value = "green";
+
+          if (nextAction.value.action === "IN") {
+            locationDescription.value = '';
+            submitLog(nextAction.value.action);
+          } else {
+            locationDescription.value = '';
+
+            // ✅ OUT → verify boundary using last check-in coordinates
+            const lastLat = parseFloat(lastLog.value.latitude);
+            const lastLon = parseFloat(lastLog.value.longitude);
+            const lastRadius = lastLog.value.radius ? parseFloat(lastLog.value.radius) : 50;
+
+            const distanceToLastCenter = getDistanceFromLatLonInMeters(
+              latitude.value,
+              longitude.value,
+              lastLat,
+              lastLon
+            );
+
+            if (distanceToLastCenter <= lastRadius) {
+              submitLog(nextAction.value.action);
+            } else {
+              matchMessage.value = "You Are Outside the Boundary";
+              statusMessage.value = "You Are Outside the Boundary";
+
+
+              statusColor.value = "red";
+              isValidLocation = false;
+            }
+          }
+        } else {
+          faceMatched = false;
+          if (geofence.data.length === 0) {
+            statusMessage.value = "Geofence is Missing, Contact ur HR" //Camera ready. Upload reference image.
+            statusColor.value = "red"
+            return
+          }
+
+          matchMessage.value = "Matched but Outside Allowed Office Boundary";
+          statusMessage.value = "Matched but Outside Allowed Office Boundary";
+          statusColor.value = "red";
+          isValidLocation = false;
+        }
+      }
+
+
+
+      // sales emp
+      else {
+        if (nextAction.value.action === "IN") {
+          // submitLog(nextAction.value.action);
+          matchMessage.value = "Face Matched"
+          statusMessage.value = "Face Matched"
+          statusColor.value = "green"
+          faceMatched = true;
+          isCheckOut = true;
+          // console.log("Last Log",lastLog.value);
+          // lastLogRefDoctype.value=lastLog.value.reference_dt
+          // lastLogRefName.value=lastLog.value.reference_dn
+          // lastCheckOutID.value=lastLog.value.name;
+          if (lastLog.value) {
+            lastLogRefDoctype.value = lastLog.value.reference_dt
+            lastLogRefName.value = lastLog.value.reference_dn
+            lastCheckOutID.value = lastLog.value.name;
+            lastLogLat.value = lastLog.value.latitude;
+            lastLogLan.value = lastLog.value.longitude;
+            //         console.log("expectedLat",lastLogLat.value)
+            // console.log("expectedLon",lastLogLan.value)
+            lastLogRefTime.value = lastLog.value?.time?.slice(0, 10) || "";
+          }
+          // console.log("last --",lastLogRefDoctype.value)
+        } else {
+          isCheckOut = false;
+          matchMessage.value = "Face Matched"
+          statusMessage.value = "Face Matched"
+          statusColor.value = "green"
+          // faceMatched = true;
+          // ✅ OUT → verify boundary using last check-in coordinates
+          // console.log("Last Log",lastLog.value);
+          lastLogRefDoctype.value = lastLog.value.reference_dt
+          lastLogRefName.value = lastLog.value.reference_dn
+          lastCheckOutID.value = lastLog.value.name;
+          lastLogLat.value = lastLog.value.latitude;
+          lastLogLan.value = lastLog.value.longitude;
+          // console.log("last --",lastLogRefDoctype.value)
+
+          const lastLat = parseFloat(lastLog.value.latitude);
+          const lastLon = parseFloat(lastLog.value.longitude);
+          const defaultRadius = 50;
+
+          const dist = getDistanceFromLatLonInMeters(
+            latitude.value,
+            longitude.value,
+            lastLat,
+            lastLon
+          );
+
+          if (dist <= defaultRadius) {
+            submitLog(nextAction.value.action);
+
+          } else {
+            matchMessage.value = "You Are Outside The  Allowed Boundary";
+            statusMessage.value = "You Are Outside The  Allowed Boundary";
+            statusColor.value = "red";
+            isValidLocation = false;
+            isCheckOut = true;
+          }
+        }
+      }
+
+    } else {
+      faceMatched = false;
+      statusMessage.value = `Not Matched (distance: ${distance.toFixed(3)})`;
+      statusColor.value = "red";
+      isValidLocation = false;
+    }
+
+
+
+  }, 1200)
 
 }
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; // meters
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lon2-lon1) * Math.PI/180;
- 
-    const a = Math.sin(Δφ/2) ** 2 +
-        Math.cos(φ1) * Math.cos(φ2) *
-        Math.sin(Δλ/2) ** 2;
- 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // in meters
+  const R = 6371e3; // meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // in meters
 }
 // function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
 //     const R = 6371e3; // meters
@@ -1310,27 +1255,27 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
 //     const φ2 = lat2 * Math.PI/180;
 //     const Δφ = (lat2-lat1) * Math.PI/180;
 //     const Δλ = (lon2-lon1) * Math.PI/180;
- 
+
 //     const a = Math.sin(Δφ/2) ** 2 +
 //         Math.cos(φ1) * Math.cos(φ2) *
 //         Math.sin(Δλ/2) ** 2;
- 
+
 //     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 //     return R * c; // in meters
 // }
 
 function getEAR(landmarks) {
-	const left = landmarks.getLeftEye().map(pt => [pt.x, pt.y])
-	const right = landmarks.getRightEye().map(pt => [pt.x, pt.y])
+  const left = landmarks.getLeftEye().map(pt => [pt.x, pt.y])
+  const right = landmarks.getRightEye().map(pt => [pt.x, pt.y])
 
-	function ear(eye) {
-		const A = faceapi.euclideanDistance(eye[1], eye[5])
-		const B = faceapi.euclideanDistance(eye[2], eye[4])
-		const C = faceapi.euclideanDistance(eye[0], eye[3])
-		return (A + B) / (2.0 * C)
-	}
+  function ear(eye) {
+    const A = faceapi.euclideanDistance(eye[1], eye[5])
+    const B = faceapi.euclideanDistance(eye[2], eye[4])
+    const C = faceapi.euclideanDistance(eye[0], eye[3])
+    return (A + B) / (2.0 * C)
+  }
 
-	return (ear(left) + ear(right)) / 2.0
+  return (ear(left) + ear(right)) / 2.0
 }
 
 function getHeadTurn(landmarks) {
@@ -1346,12 +1291,12 @@ function getHeadTurn(landmarks) {
 
 
 function captureImage() {
-	const canvas = document.createElement("canvas")
-	canvas.width = video.value.videoWidth
-	canvas.height = video.value.videoHeight
-	const ctx = canvas.getContext("2d")
-	ctx.drawImage(video.value, 0, 0, canvas.width, canvas.height)
-	return canvas.toDataURL("image/jpeg", 0.9) // returns Base64 image
+  const canvas = document.createElement("canvas")
+  canvas.width = video.value.videoWidth
+  canvas.height = video.value.videoHeight
+  const ctx = canvas.getContext("2d")
+  ctx.drawImage(video.value, 0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL("image/jpeg", 0.9) // returns Base64 image
 }
 
 // let AZURE_KEY = "";
@@ -1360,7 +1305,7 @@ function captureImage() {
 //   const config = await getRuntimeConfig();
 //   console.log(config, "configgggggggggggggggggggggg")
 //   console.log(config.AZURE_KEY, "dataaaaaaaaaaaaaaaaaaaa");
-  
+
 //   AZURE_KEY = config.AZURE_KEY || "";
 
 //   if (!AZURE_KEY) {
@@ -1380,29 +1325,29 @@ async function initAzure() {
     return;
   }
 
-  const url_config=await getRuntimeURLConfig();
+  const url_config = await getRuntimeURLConfig();
   // distance_url=url_config.distance_url;
   // location_url=url_config.location_url; 
   // distance_response=url_config.distance_response;
   // location_response=url_config.location_response;
-//   if (!url_config.distance_url) {
-//   alert("distance_url value is missing");
-//   return;
-// } 
-//  if (!url_config.location_url) {
-//   alert("location_url value is missing");
-//   return;
-// } 
-//  if (!url_config.distance_response) {
-//   alert("distance_response value is missing");
-//   return;
-// } 
-//  if (!url_config.location_response) {
-//   alert("location_response value is missing");
-//   return;
-// } 
-  
-distance_url = url_config.distance_url;
+  //   if (!url_config.distance_url) {
+  //   alert("distance_url value is missing");
+  //   return;
+  // } 
+  //  if (!url_config.location_url) {
+  //   alert("location_url value is missing");
+  //   return;
+  // } 
+  //  if (!url_config.distance_response) {
+  //   alert("distance_response value is missing");
+  //   return;
+  // } 
+  //  if (!url_config.location_response) {
+  //   alert("location_response value is missing");
+  //   return;
+  // } 
+
+  distance_url = url_config.distance_url;
   location_url = url_config.location_url;
   distance_response = url_config.distance_response;
   location_response = url_config.location_response;
@@ -1425,13 +1370,13 @@ function buildUrl(template, replacements) {
 
 async function getDistanceInMeters(currentLat, currentLon, expectedLat, expectedLon) {
 
-// console.log("currentLat",currentLat)
-// console.log("currentLon",currentLon)
-// console.log("expectedLat",expectedLat)
-// console.log("expectedLon",expectedLon)
+  // console.log("currentLat",currentLat)
+  // console.log("currentLon",currentLon)
+  // console.log("expectedLat",expectedLat)
+  // console.log("expectedLon",expectedLon)
 
 
-  const key = azure_key 
+  const key = azure_key
 
   if (!key) {
     console.warn("Azure Key missing");
@@ -1442,11 +1387,11 @@ async function getDistanceInMeters(currentLat, currentLon, expectedLat, expected
 
   // console.log("Using Azure Key:", key);
 
-//   expectedLat = 12.8742
-//   expectedLon= 77.5569
+  //   expectedLat = 12.8742
+  //   expectedLon= 77.5569
 
   // const url = `https://atlas.microsoft.com/route/directions/json?api-version=1.0&subscription-key=${key}&query=${currentLat},${currentLon}:${expectedLat},${expectedLon}`;
-const url = buildUrl(distance_url, {
+  const url = buildUrl(distance_url, {
     key,
     currentLat,
     currentLon,
@@ -1458,13 +1403,13 @@ const url = buildUrl(distance_url, {
     const data = await response.json();
 
     const distance = getValueByPath(data, distance_response);
-    console.log("Distance ",distance);
+    console.log("Distance ", distance);
 
     // const distance = data?.distance_response;
 
 
     if (!distance && distance !== 0) {
-    //   console.error("Invalid Distance Response:", data);
+      //   console.error("Invalid Distance Response:", data);
       return 0;
     }
 
@@ -1543,30 +1488,35 @@ async function getLocationAPI(currentLat, currentLon) {
       // console.log("Location Result:", locationResult);
 
       locationDescription.value = locationResult || "";
+    // console.log("Des new before save",locationDescription.value);
+
 
       const response = await fetch(
-    "/api/method/hrms.api.api.save_location",
-    {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Frappe-CSRF-Token": csrfToken
-      },
-      body: JSON.stringify({
-        payload: apiData 
-      })
-    }
-  );
+        "/api/method/hrms.api.api.save_location",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Frappe-CSRF-Token": csrfToken
+          },
+          body: JSON.stringify({
+            payload: apiData
+          })
+        }
+      );
 
-  const result = await response.json();
-  // console.log("Save Res",result);
+      const result = await response.json();
+      // console.log("Save Res",result);
+      locationDescription.value = result.message.display_name || "";
+    // console.log("Des new after",locationDescription.value);
 
-  if (!response.ok) {
-    throw new Error(result?.message || "Failed to save location");
-  }
-  
-  return locationResult;
+
+      if (!response.ok) {
+        throw new Error(result?.message || "Failed to save location");
+      }
+
+      return locationResult;
 
 
     }
@@ -1574,7 +1524,8 @@ async function getLocationAPI(currentLat, currentLon) {
     /* ------------------------------------------------
        3. Location already exists
     ------------------------------------------------ */
-    locationDescription.value = frappeResult.message.location || "";
+    locationDescription.value = frappeResult.message.display_name || "";
+    // console.log("Des Alerady",locationDescription.value);
     return locationDescription.value;
 
   } catch (error) {
@@ -1611,50 +1562,50 @@ function formatAddress(data) {
 }
 
 
-async function CreateCheckInJoureny(){
+async function CreateCheckInJoureny() {
 
 
 
-	const distance = await getDistanceInMeters(
+  const distance = await getDistanceInMeters(
     latitude.value,
     longitude.value,
     lastLogLat.value,
     lastLogLan.value
   );
-  let dis_km=0
-  if(distance!==0){
-dis_km = Number((distance / 1000).toFixed(2));
+  let dis_km = 0
+  if (distance !== 0) {
+    dis_km = Number((distance / 1000).toFixed(2));
   }
 
 
 
-const lastLogID=lastLog.value.name
+  const lastLogID = lastLog.value.name
 
 
-const employeeData=employee.data
-const now = new Date();
-const formattedDateTime =
-now.getFullYear() + '-' +
-(now.getMonth() + 1).toString().padStart(2, '0') + '-' +
-now.getDate().toString().padStart(2, '0'); 
+  const employeeData = employee.data
+  const now = new Date();
+  const formattedDateTime =
+    now.getFullYear() + '-' +
+    (now.getMonth() + 1).toString().padStart(2, '0') + '-' +
+    now.getDate().toString().padStart(2, '0');
 
-const csrfToken =
+  const csrfToken =
     frappe?.csrf_token || window?.csrf_token || getCookie("csrf_token");
 
   const payload = {
     employee: employeeData.name,
-	user:employeeData.user_id,
-	checkout:lastCheckOutID.value,
-	checkout_reference:lastLogRefDoctype.value,
-	checkout_reference_name:lastLogRefName.value,
-	checkin:currentCheckINID.value,
-	checkin_reference:currentLogRefDoctype.value,
-	checkin_reference_name:currentLogRefName.value,
-	// reference_dt:refDocDT,
-	// reference_name:refDocDN,
+    user: employeeData.user_id,
+    checkout: lastCheckOutID.value,
+    checkout_reference: lastLogRefDoctype.value,
+    checkout_reference_name: lastLogRefName.value,
+    checkin: currentCheckINID.value,
+    checkin_reference: currentLogRefDoctype.value,
+    checkin_reference_name: currentLogRefName.value,
+    // reference_dt:refDocDT,
+    // reference_name:refDocDN,
     distance: dis_km,
     date: formattedDateTime,
-	// description:locationDescription.value
+    // description:locationDescription.value
   };
 
   const response = await fetch(
@@ -1674,8 +1625,8 @@ const csrfToken =
   const result = await response.json();
 
   if (result.message) {
-	// console.log("result",result.message.data);
-	
+    // console.log("result",result.message.data);
+
 
   } else {
     console.error(" Error Creating CheckIn Joureny:", result);
@@ -1683,156 +1634,228 @@ const csrfToken =
 
 
 }
+const isEmpty = (val) =>
+  val === null || val === undefined || val === ""
+
+
+function fieldsCheckIn() {
+  const typeValue = typeofCheckIn.value?.value || ""
+
+  const testValue =
+    hospitalValue.value?.value ||
+    carValue.value?.value ||
+    leadValue.value?.value ||
+    opportunityValue.value?.value ||
+    ""
+
+  console.log("Type", typeValue)
+  console.log("Value", testValue)
+
+  //Both empty → show toast & stop
+  if (isEmpty(typeValue) || isEmpty(testValue) && field_employee.value === 'Yes') {
+    console.log("empty")
+    toast({
+      title: __("Required"),
+      text: __("Please select Type of Check-In and at least one reference."),
+      icon: "alert-circle",
+      position: "top-center",
+      iconClasses: "text-red-500",
+    })
+    return
+  }
+
+  //Otherwise proceed
+  submitLog(nextAction.value.action)
+}
+function fieldsForgetCheckIn() {
+  const typeValue = typeofCheckIn.value?.value || ""
+
+  const testValue =
+    hospitalValue.value?.value ||
+    carValue.value?.value ||
+    leadValue.value?.value ||
+    opportunityValue.value?.value ||
+    ""
+
+  console.log("Type", typeValue)
+  console.log("Value", testValue)
+
+  //Both empty → show toast & stop
+  if (isEmpty(typeValue) || isEmpty(testValue) && field_employee.value === 'Yes') {
+    console.log("empty")
+    toast({
+      title: __("Required"),
+      text: __("Please select Type of Check-In and at least one reference."),
+      icon: "alert-circle",
+      position: "top-center",
+      iconClasses: "text-red-500",
+    })
+    return
+  }
+  submitLog('IN')
+}
+
+watch(
+  () => typeofCheckIn.value?.value,
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      hospitalValue.value = null
+      carValue.value = null
+      leadValue.value = null
+      opportunityValue.value = null
+    }
+  }
+)
 
 const submitLog = (logType) => {
-	const actionLabel = logType === "IN" ? __("Check-in") : __("Check-out")
-
-	
-const refDocDT = typeofCheckIn.value?.value || lastLogRefDoctype.value || "";
-const refDocDN =
-  hospitalValue.value?.value ||
-  carValue.value?.value ||
-  leadValue.value?.value ||
-  opportunityValue.value?.value || lastLogRefName.value ||
-  "";
+  const actionLabel = logType === "IN" ? __("Check-in") : __("Check-out")
 
 
-currentLogRefDoctype.value=refDocDT
-currentLogRefName.value=refDocDN
+  const refDocDT = typeofCheckIn.value?.value || lastLogRefDoctype.value || "";
+  const refDocDN =
+    hospitalValue.value?.value ||
+    carValue.value?.value ||
+    leadValue.value?.value ||
+    opportunityValue.value?.value || lastLogRefName.value ||
+    "";
 
-	const capturedImage = captureImage()
-	checkins.insert.submit(
-		{
-			employee: employee.data.name,
-			log_type: logType,
-			time: checkinTimestamp.value,
-			latitude: latitude.value,
-			longitude: longitude.value,
-			location:loginlocation.value,
-			device_id:device_id.value,
-			reference_dt: refDocDT,   // ← fixed
-  			reference_dn: refDocDN ,   // ← fixed
-			description:locationDescription.value
-		},
-		{
-		async onSuccess(doc) {
-      modalController.dismiss()
-			stopCamera()
-			const checkinId = doc.name
-			
-			currentCheckINID.value=checkinId;
-				if (capturedImage) {
-					await uploadCapturedImage(doc.name, capturedImage)
-				}
+
+  currentLogRefDoctype.value = refDocDT
+  currentLogRefName.value = refDocDN
+
+  const capturedImage = captureImage()
+  checkins.insert.submit(
+    {
+      employee: employee.data.name,
+      log_type: logType,
+      time: checkinTimestamp.value,
+      latitude: latitude.value,
+      longitude: longitude.value,
+      location: loginlocation.value,
+      device_id: device_id.value,
+      reference_dt: refDocDT,   // ← fixed
+      reference_dn: refDocDN,   // ← fixed
+      description: locationDescription.value
+    },
+    {
+      async onSuccess(doc) {
+        modalController.dismiss()
+        stopCamera()
+        const checkinId = doc.name
+
+        currentCheckINID.value = checkinId;
+        if (capturedImage) {
+          await uploadCapturedImage(doc.name, capturedImage)
+        }
         isCheckinModalOpen.value = false;
-				// if (field_employee.value === 'Yes' && actionLabel === 'Check-in') {
+        // if (field_employee.value === 'Yes' && actionLabel === 'Check-in') {
         if (field_employee.value === 'Yes' && actionLabel === 'Check-in' && !forgetCheckOut.value) {
 
-						const now = new Date();
+          const now = new Date();
 
-						const formattedDateTime =
-						now.getFullYear() + '-' +
-						(now.getMonth() + 1).toString().padStart(2, '0') + '-' +
-						now.getDate().toString().padStart(2, '0'); 
-						
-
+          const formattedDateTime =
+            now.getFullYear() + '-' +
+            (now.getMonth() + 1).toString().padStart(2, '0') + '-' +
+            now.getDate().toString().padStart(2, '0');
 
 
-						// const lastDate = lastLog.value.time.split(" ")[0];
-            const lastDate = lastLogRefTime.value;
-						
-						if(lastDate===formattedDateTime){
-							CreateCheckInJoureny();
-						}
 
-						
-					}
-        
+
+          // const lastDate = lastLog.value.time.split(" ")[0];
+          const lastDate = lastLogRefTime.value;
+
+          if (lastDate === formattedDateTime) {
+            CreateCheckInJoureny();
+          }
+
+
+        }
+
         isSalesFaceMatched = false;
         forgetCheckOut.value = false;
-        matchMessage.value="";
-        isCheckOut=false;
-				toast({
-					title: __("Success"),
-					text: __("{0} successful!", [actionLabel]),
-					icon: "check-circle",
-					position: "bottom-center",
-					iconClasses: "text-green-500",
-				})
-				leadValue.value='',
-				hospitalValue.value="",
-				typeofCheckIn.value="",
-				carValue.value="",
-				opportunityValue.value=""
-			},
-			onError(error) {
-				let messages = error.messages || []
-				for (const message of messages) {
-					toast({
-						title: __("Error"),
-						text: message || __("{0} failed!", [actionLabel]),
-						icon: "alert-circle",
-						position: "bottom-center",
-						iconClasses: "text-red-500",
-					})
-				}
-			},
-		}
-	)
+        matchMessage.value = "";
+        isCheckOut = false;
+        toast({
+          title: __("Success"),
+          text: __("{0} successful!", [actionLabel]),
+          icon: "check-circle",
+          position: "bottom-center",
+          iconClasses: "text-green-500",
+        })
+        leadValue.value = '',
+          hospitalValue.value = "",
+          typeofCheckIn.value = "",
+          carValue.value = "",
+          opportunityValue.value = ""
+      },
+      onError(error) {
+        let messages = error.messages || []
+        for (const message of messages) {
+          toast({
+            title: __("Error"),
+            text: message || __("{0} failed!", [actionLabel]),
+            icon: "alert-circle",
+            position: "bottom-center",
+            iconClasses: "text-red-500",
+          })
+        }
+      },
+    }
+  )
 }
 
 function getCookie(name) {
-	const value = `; ${document.cookie}`
-	const parts = value.split(`; ${name}=`)
-	if (parts.length === 2) return parts.pop().split(";").shift()
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(";").shift()
 }
 
 async function uploadCapturedImage(checkinId, base64Image) {
-	const blob = await (await fetch(base64Image)).blob()
-	const formData = new FormData()
+  const blob = await (await fetch(base64Image)).blob()
+  const formData = new FormData()
 
-	formData.append("file", blob, `${checkinId}.jpg`)
-	formData.append("doctype", "Employee Checkin")
-	formData.append("docname", checkinId)
-	formData.append("is_private", 1)
+  formData.append("file", blob, `${checkinId}.jpg`)
+  formData.append("doctype", "Employee Checkin")
+  formData.append("docname", checkinId)
+  formData.append("is_private", 1)
 
-	// ✅ Get CSRF Token from Cookie
-	const csrfToken = frappe.csrf_token || window.csrf_token || getCookie("csrf_token")
+  // ✅ Get CSRF Token from Cookie
+  const csrfToken = frappe.csrf_token || window.csrf_token || getCookie("csrf_token")
 
-	await fetch("/api/method/upload_file", {
-		method: "POST",
-		body: formData,
-		credentials: "include", // ✅ required to send session cookies
-		headers: {
-			"X-Frappe-CSRF-Token": csrfToken, // ✅ required to validate call
-		},
-	})
+  await fetch("/api/method/upload_file", {
+    method: "POST",
+    body: formData,
+    credentials: "include", // ✅ required to send session cookies
+    headers: {
+      "X-Frappe-CSRF-Token": csrfToken, // ✅ required to validate call
+    },
+  })
 }
 
 async function fetchLocationList() {
-	const csrfToken = frappe?.csrf_token || window?.csrf_token || getCookie("csrf_token")
+  const csrfToken = frappe?.csrf_token || window?.csrf_token || getCookie("csrf_token")
 
-	const response = await fetch(
-		"/api/method/hrms.api.location_api.get_all_locations",
-		{
-			method: "GET",
-			credentials: "include", // ✅ needed to send session cookies
-			headers: {
-				"Content-Type": "application/json",
-				"X-Frappe-CSRF-Token": csrfToken, // ✅ required
-			},
-		}
-	)
+  const response = await fetch(
+    "/api/method/hrms.api.location_api.get_all_locations",
+    {
+      method: "GET",
+      credentials: "include", // ✅ needed to send session cookies
+      headers: {
+        "Content-Type": "application/json",
+        "X-Frappe-CSRF-Token": csrfToken, // ✅ required
+      },
+    }
+  )
 
-	const result = await response.json()
-		
-	if (result.message.data) {
-		 locations.value=result.message.data
-		
-	} else {
-		console.error("Error:", result.message)
-		return []
-	}
+  const result = await response.json()
+
+  if (result.message.data) {
+    locations.value = result.message.data
+
+  } else {
+    console.error("Error:", result.message)
+    return []
+  }
 }
 
 async function fetchOptions(docType) {
@@ -1852,87 +1875,87 @@ async function fetchOptions(docType) {
   return result?.message?.data || result?.data || [];
 }
 async function loadAllOptions() {
-const leadData = await fetchOptions("lead");
-const leadArray = Array.isArray(leadData) ? leadData : Object.values(leadData);
+  const leadData = await fetchOptions("lead");
+  const leadArray = Array.isArray(leadData) ? leadData : Object.values(leadData);
 
-leadOptions.value = leadArray.map(i => {
-  // Build label parts dynamically
-  let extras = [];
+  leadOptions.value = leadArray.map(i => {
+    // Build label parts dynamically
+    let extras = [];
 
-  if (i.lead_name) extras.push(i.lead_name);
-  if (i.mobile_no) extras.push(i.mobile_no);
+    if (i.lead_name) extras.push(i.lead_name);
+    if (i.mobile_no) extras.push(i.mobile_no);
 
-  return {
-    label: extras.length ? `${i.name} (${extras.join(", ")})` : i.name,
-    value: i.name
-  };
-});
+    return {
+      label: extras.length ? `${i.name} (${extras.join(", ")})` : i.name,
+      value: i.name
+    };
+  });
 
-leadOptions.value = [
-  ...leadOptions.value,
-  { label: "+ Create New Lead", value: "create_new_lead" }
-];
+  leadOptions.value = [
+    ...leadOptions.value,
+    { label: "+ Create New Lead", value: "create_new_lead" }
+  ];
 
   const oppData = await fetchOptions("opportunity");
-const oppArray = Array.isArray(oppData) ? oppData : Object.values(oppData);
+  const oppArray = Array.isArray(oppData) ? oppData : Object.values(oppData);
 
-OpportunityOptions.value = oppArray.map(i => {
-  let extras = [];
+  OpportunityOptions.value = oppArray.map(i => {
+    let extras = [];
 
-  if (i.opportunity_from) extras.push(i.opportunity_from);
-//   if (i.party_name) extras.push(i.party_name);
-  if (i.title) extras.push(i.title);
+    if (i.opportunity_from) extras.push(i.opportunity_from);
+    //   if (i.party_name) extras.push(i.party_name);
+    if (i.title) extras.push(i.title);
 
-  return {
-    label: extras.length ? `${i.name} (${extras.join(", ")})` : i.name,
-    value: i.name
-  };
-});
+    return {
+      label: extras.length ? `${i.name} (${extras.join(", ")})` : i.name,
+      value: i.name
+    };
+  });
 
-OpportunityOptions.value = [
-  ...OpportunityOptions.value,
-  { label: "+ Create New Opportunity", value: "create_new_opportunity" }
-];
+  OpportunityOptions.value = [
+    ...OpportunityOptions.value,
+    { label: "+ Create New Opportunity", value: "create_new_opportunity" }
+  ];
 
-const hospitalData = await fetchOptions("hospital");
-const hospitalArray = Array.isArray(hospitalData) ? hospitalData : Object.values(hospitalData);
-
-
-HospitalOptions.value = hospitalArray.map(i => {
-  let extras = [];
-
-  // REPLACE WITH YOUR ACTUAL FIELD NAME FOR DISPLAY
-  // if (i.hospital) extras.push(i.hospital);
-  if (i.title) extras.push(i.title);
+  const hospitalData = await fetchOptions("hospital");
+  const hospitalArray = Array.isArray(hospitalData) ? hospitalData : Object.values(hospitalData);
 
 
-  return {
-    label: extras.length ? `${i.name} (${extras.join(", ")})` : i.name,
-    value: i.name
-  };
-});
+  HospitalOptions.value = hospitalArray.map(i => {
+    let extras = [];
 
-// HospitalOptions.value = [
-//   ...HospitalOptions.value,
-//   { label: "+ Create New Hospital", value: "create_new_hospital" }
-// ];
+    // REPLACE WITH YOUR ACTUAL FIELD NAME FOR DISPLAY
+    // if (i.hospital) extras.push(i.hospital);
+    if (i.title) extras.push(i.title);
 
-const carData = await fetchOptions("car");
-const carArray = Array.isArray(carData) ? carData : Object.values(carData);
 
-CarOptions.value = carArray.map(i => {
-  let extras = [];
+    return {
+      label: extras.length ? `${i.name} (${extras.join(", ")})` : i.name,
+      value: i.name
+    };
+  });
 
-  // REPLACE WITH YOUR ACTUAL FIELD NAME FOR DISPLAY
-  // if (i.title) extras.push(i.title);
+  // HospitalOptions.value = [
+  //   ...HospitalOptions.value,
+  //   { label: "+ Create New Hospital", value: "create_new_hospital" }
+  // ];
 
-  return {
-    label: extras.length ? `${i.name} (${extras.join(", ")})` : i.name,
-    value: i.name
-  };
-});
+  const carData = await fetchOptions("car");
+  const carArray = Array.isArray(carData) ? carData : Object.values(carData);
 
-await fetchLocationList();
+  CarOptions.value = carArray.map(i => {
+    let extras = [];
+
+    // REPLACE WITH YOUR ACTUAL FIELD NAME FOR DISPLAY
+    // if (i.title) extras.push(i.title);
+
+    return {
+      label: extras.length ? `${i.name} (${extras.join(", ")})` : i.name,
+      value: i.name
+    };
+  });
+
+  await fetchLocationList();
 
 }
 
@@ -1973,41 +1996,38 @@ async function getDeviceId() {
 }
 
 onMounted(async () => {
-	
-	setTimeout(() => {
+
+  setTimeout(() => {
     loadAllOptions();
   }, 1000);
   initAzure();
   const deviceId = await getDeviceId();
-  device_id.value=deviceId;
-// console.log(" Device ID:", deviceId);
+  device_id.value = deviceId;
+  // console.log(" Device ID:", deviceId);
 
-	// Load all
-  
-//   console.log("Lead:", leadOptions.value);
-//   console.log("Opportunity:", OpportunityOptions.value);
-//   console.log("Hospital:", HospitalOptions.value);
-//   console.log("CAR:", CarOptions.value);
+  // Load all
 
-	field_employee.value=employee.data.field_employee;
-	// console.log("Employee",field_employee.value);
-	socket.emit("doctype_subscribe", DOCTYPE)
-	socket.on("list_update", (data) => {
-		if (data.doctype == DOCTYPE) checkins.reload()
-	})
+  //   console.log("Lead:", leadOptions.value);
+  //   console.log("Opportunity:", OpportunityOptions.value);
+  //   console.log("Hospital:", HospitalOptions.value);
+  //   console.log("CAR:", CarOptions.value);
+
+  field_employee.value = employee.data.field_employee;
+  // console.log("Employee",field_employee.value);
+  socket.emit("doctype_subscribe", DOCTYPE)
+  socket.on("list_update", (data) => {
+    if (data.doctype == DOCTYPE) checkins.reload()
+  })
 })
 
 onBeforeUnmount(() => {
-	stopCamera()
-	socket.emit("doctype_unsubscribe", DOCTYPE)
-	socket.off("list_update")
+  stopCamera()
+  socket.emit("doctype_unsubscribe", DOCTYPE)
+  socket.off("list_update")
 })
 </script>
 
 <style scoped>
-
-
-
 .custom-center-modal::part(content) {
   position: fixed;
   top: 0;
@@ -2024,7 +2044,7 @@ onBeforeUnmount(() => {
 .popup-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0,0,0,0.45);
+  background-color: rgba(0, 0, 0, 0.45);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2037,13 +2057,20 @@ onBeforeUnmount(() => {
   max-width: 90%;
   border-radius: 12px;
   padding: 18px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   animation: fadeUp 0.25s ease;
 }
 
 @keyframes fadeUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .popup-header {
@@ -2083,11 +2110,10 @@ onBeforeUnmount(() => {
   color: white;
   cursor: pointer;
 }
+
 .camera {
-  transform: scaleX(1) !important;
-  -webkit-transform: scaleX(1) !important;
+  transform: scaleX(-1) !important;
+  -webkit-transform: scaleX(-1) !important;
+  -moz-transform: scaleX(-1) !important;
 }
-
-
-
 </style>

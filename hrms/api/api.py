@@ -281,43 +281,98 @@ def save_location():
 
 
 
+# @frappe.whitelist(allow_guest=True)
+# def find_location_by_latlon(lat, lon, buffer=0.0001):
+#     lat = float(lat)
+#     lon = float(lon)
+#     buffer = float(buffer)
+
+#     locations = frappe.get_all(
+#         "Location Description",
+#         fields=["name", "display_name", "bounding_box"]
+#     )
+
+#     for loc in locations:
+#         if not loc.bounding_box:
+#             continue
+
+#         try:
+#             south, north, west, east = map(
+#                 float, json.loads(loc.bounding_box)
+#             )
+
+#             # 🔹 Expand bounding box
+#             south -= buffer
+#             north += buffer
+#             west  -= buffer
+#             east  += buffer
+
+#             if south <= lat <= north and west <= lon <= east:
+#                 return {
+#                     "found": True,
+#                     "name": loc.name,
+#                     "display_name": loc.display_name
+#                 }
+
+#         except Exception:
+#             continue
+
+#     return {
+#         "found": False,
+#         "message": "No location found for given coordinates"
+#     }
+
+import math
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """
+    Returns distance in meters between two lat/lon points
+    """
+    R = 6371000  # Earth radius in meters
+
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+
+    a = (
+        math.sin(dphi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    )
+
+    return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
 @frappe.whitelist(allow_guest=True)
-def find_location_by_latlon(lat, lon, buffer=0.0001):
+def find_location_by_latlon(lat, lon, radius=300):
     lat = float(lat)
     lon = float(lon)
-    buffer = float(buffer)
+    radius = float(radius)  # meters
 
     locations = frappe.get_all(
         "Location Description",
-        fields=["name", "display_name", "bounding_box"]
+        fields=["name", "display_name", "latitude", "longitude"]
     )
 
     for loc in locations:
-        if not loc.bounding_box:
-            continue
+        
+        if loc.latitude is None or loc.longitude is None:
+            # continue skips the current record and moves to the next location in the locations.
+            continue 
 
-        try:
-            south, north, west, east = map(
-                float, json.loads(loc.bounding_box)
-            )
+        distance = haversine_distance(
+            lat, lon, loc.latitude, loc.longitude
+        )
 
-            # 🔹 Expand bounding box
-            south -= buffer
-            north += buffer
-            west  -= buffer
-            east  += buffer
-
-            if south <= lat <= north and west <= lon <= east:
-                return {
-                    "found": True,
-                    "name": loc.name,
-                    "display_name": loc.display_name
-                }
-
-        except Exception:
-            continue
+        if distance <= radius:
+            return {
+                "found": True,
+                "name": loc.name,
+                "display_name": loc.display_name,
+                "distance_m": round(distance, 2)
+            }
 
     return {
         "found": False,
-        "message": "No location found for given coordinates"
+        "message": "No location found within meters"
     }
+
