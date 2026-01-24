@@ -1,10 +1,9 @@
 <template>
 	<ion-app>
-		<InstallPrompt />
 		<ion-router-outlet id="main-content" />
 		<Toasts />
 
-		
+		<InstallPrompt />
 	</ion-app>
 </template>
 
@@ -22,9 +21,4 @@ onMounted(() => {
 		showNotification(payload)
 	})
 })
-window.addEventListener("beforeinstallprompt", (e) => {
-	e.preventDefault()
-	window.__deferredPrompt = e
-})
-
 </script>
