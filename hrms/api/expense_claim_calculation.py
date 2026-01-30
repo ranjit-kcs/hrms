@@ -196,7 +196,7 @@ def calculate_monthly_travel_expenses():
                 1,
             )
 
-        frappe.db.commit()
+        # frappe.db.commit()
 
         frappe.logger().info(
             f"Travel Expense Completed: {total_claims} claims, "
