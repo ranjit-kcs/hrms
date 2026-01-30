@@ -1,17 +1,25 @@
 import frappe
-from frappe.utils import get_first_day, get_last_day, add_months, today, flt
+from frappe.utils import (
+    get_first_day,
+    get_last_day,
+    add_months,
+    today,
+    flt,
+)
 
 @frappe.whitelist()
-def calculate_monthly_travel_expenses(method=None):
-    """Auto-calculates total travel distance and amount for each employee 
-       using approved CheckIn Journey records (docstatus=1, ec_submitted=0). 
-       Groups by month + vehicle, creates separate expense rows per month,
-       and marks CheckIn Journeys as ec_submitted=1 after processing.
-    """
+def calculate_monthly_travel_expenses():
+    """Optimized Monthly Travel Expense Generator"""
+
     try:
         from_date = get_first_day(add_months(today(), -1))
         to_date = get_last_day(add_months(today(), -1))
 
+        frappe.logger().info(f"Travel expense calculation {from_date} → {to_date}")
+
+        # ------------------------------------------------------------------
+        # Fetch all approved & unsubmitted journeys
+        # ------------------------------------------------------------------
         journeys = frappe.get_all(
             "Checkin Journey",
             filters={
@@ -26,37 +34,42 @@ def calculate_monthly_travel_expenses(method=None):
                 "vehicle_type",
                 "checkin_description",
                 "checkout_description",
-                "location",
             ],
-            order_by="date asc",
+            order_by="employee, date",
         )
 
         if not journeys:
-            frappe.logger().info("No approved unsubmitted journeys found.")
+            frappe.logger().info("No Checkin Journeys found")
             return
 
-        employee_data = {}
+        # ------------------------------------------------------------------
+        #  Group journeys → employee → month → vehicle
+        # ------------------------------------------------------------------
+        employee_map = {}
+        employee_journey_map = {}
+        all_employees = set()
 
         for j in journeys:
-            emp = j.get("employee")
-            if not emp:
+            if not j.employee:
                 continue
 
-            date = j.get("date")
-            month_key = date.strftime("%Y-%m")
-            vehicle = (j.get("vehicle_type") or "Bike").strip().capitalize()
-            distance = flt(j.get("distance") or 0)
+            all_employees.add(j.employee)
+            employee_journey_map.setdefault(j.employee, []).append(j.name)
 
-            checkin_desc = j.get("checkin_description") or "No check-in details"
-            checkout_desc = j.get("checkout_description") or "No checkout details"
+            month_key = j.date.strftime("%Y-%m")
+            vehicle = (j.vehicle_type or "Bike").strip().capitalize()
+            distance = flt(j.distance or 0)
+
+            checkin_desc = j.checkin_description or "No check-in details"
+            checkout_desc = j.checkout_description or "No checkout details"
 
             combined_desc = (
-                f"{date} | Check-in: {checkin_desc} | "
+                f"{j.date} | Check-in: {checkin_desc} | "
                 f"Checkout: {checkout_desc} ({distance:.2f} KM)"
             )
 
-            employee_data \
-                .setdefault(emp, {}) \
+            employee_map \
+                .setdefault(j.employee, {}) \
                 .setdefault(month_key, {}) \
                 .setdefault(vehicle, {
                     "total_distance": 0,
@@ -64,67 +77,73 @@ def calculate_monthly_travel_expenses(method=None):
                     "journey_ids": [],
                 })
 
-            emp_month_vehicle = employee_data[emp][month_key][vehicle]
+            bucket = employee_map[j.employee][month_key][vehicle]
+            bucket["total_distance"] += distance
+            bucket["descriptions"].append(combined_desc)
+            bucket["journey_ids"].append(j.name)
 
-            emp_month_vehicle["total_distance"] += distance
-            emp_month_vehicle["descriptions"].append(combined_desc)
-            emp_month_vehicle["journey_ids"].append(j.get("name"))
+        # ------------------------------------------------------------------
+        # Prefetch Employee + Branch + Rates (NO loop DB calls)
+        # ------------------------------------------------------------------
+        employees = frappe.get_all(
+            "Employee",
+            filters={"name": ["in", list(all_employees)]},
+            fields=["name", "employee_name", "branch"],
+        )
+        employee_info = {e.name: e for e in employees}
 
+        branches = {e.branch for e in employees if e.branch}
+        branch_rates = frappe.get_all(
+            "Branch",
+            filters={"name": ["in", list(branches)]},
+            fields=["name", "car_rate_per_km", "bike_rate_per_km"],
+        )
+        branch_map = {b.name: b for b in branch_rates}
+
+        company = (
+            frappe.defaults.get_user_default("Company")
+            or frappe.db.get_single_value("Global Defaults", "default_company")
+        )
+
+        journeys_to_update = []
         total_claims = 0
-        updated_journeys = []
 
-        for emp, month_data in employee_data.items():
+        # ------------------------------------------------------------------
+        #  Create ONE Expense Claim per employee
+        # ------------------------------------------------------------------
+        for emp, month_data in employee_map.items():
 
-            employee_name = frappe.db.get_value("Employee", emp, "employee_name") or emp
-            branch = frappe.db.get_value("Employee", emp, "branch")
-
-            if not branch:
+            emp_doc = employee_info.get(emp)
+            if not emp_doc or not emp_doc.branch:
                 continue
 
-            branch_doc = frappe.db.get_value(
-                "Branch",
-                branch,
-                ["car_rate_per_km", "bike_rate_per_km"],
-                as_dict=True
-            )
-
+            branch_doc = branch_map.get(emp_doc.branch)
             if not branch_doc:
                 continue
-
-            company = (
-                frappe.defaults.get_user_default("Company")
-                or frappe.db.get_single_value("Global Defaults", "default_company")
-            )
 
             expense_claim = frappe.new_doc("Expense Claim")
             expense_claim.employee = emp
             expense_claim.posting_date = to_date
-            expense_claim.purpose = "Travel"
             expense_claim.company = company
+            expense_claim.purpose = "Travel"
 
-            total_amount = 0
             employee_journey_ids = []
 
             for month_key, vehicle_data in month_data.items():
-
                 month_start = get_first_day(month_key + "-01")
                 month_end = get_last_day(month_key + "-01")
 
                 for vehicle, data in vehicle_data.items():
+                    rate = (
+                        flt(branch_doc.car_rate_per_km)
+                        if vehicle.lower() == "car"
+                        else flt(branch_doc.bike_rate_per_km)
+                    )
 
-                    if vehicle.lower() == "car":
-                        rate_per_km = flt(branch_doc.car_rate_per_km or 0)
-                    else:
-                        rate_per_km = flt(branch_doc.bike_rate_per_km or 0)
-
-                    if not rate_per_km:
-                        print(f"⚠️ Missing rate for {vehicle} in {branch}, skipping.")
+                    if not rate:
                         continue
 
-                    total_distance = data["total_distance"]
-                    amount = total_distance * rate_per_km
-                    total_amount += amount
-
+                    amount = data["total_distance"] * rate
                     employee_journey_ids.extend(data["journey_ids"])
 
                     desc_lines = [
@@ -133,20 +152,20 @@ def calculate_monthly_travel_expenses(method=None):
                     ]
 
                     description = (
-                        f"Auto-generated travel summary for {employee_name} ({vehicle})<br>"
-                        f"Branch: {branch}<br>"
+                        f"Auto-generated travel summary for {emp_doc.employee_name} ({vehicle})<br>"
+                        f"Branch: {emp_doc.branch}<br>"
                         f"Month: {month_key}<br>"
                         f"Period: {month_start} to {month_end}<br><br>"
                         + "<br>".join(desc_lines)
-                        + f"<br><br>Total Distance: {total_distance:.2f} KM<br>"
-                        f"Rate per KM: ₹{rate_per_km}<br>"
+                        + f"<br><br>Total Distance: {data['total_distance']:.2f} KM<br>"
+                        f"Rate per KM: ₹{rate}<br>"
                         f"Total Amount: ₹{amount:.2f}"
                     )
 
                     expense_claim.append(
                         "expenses",
                         {
-                            "expense_date": month_end,
+                            "expense_date": to_date,
                             "expense_type": "Travel",
                             "description": description,
                             "amount": amount,
@@ -157,16 +176,36 @@ def calculate_monthly_travel_expenses(method=None):
             if not expense_claim.expenses:
                 continue
 
+            # --------------------------------------------------------------
+            #  Insert claim → ONLY then mark journeys
+            # --------------------------------------------------------------
             expense_claim.flags.ignore_mandatory = True
             expense_claim.insert(ignore_permissions=True)
-            frappe.db.commit()
 
-            for journey_id in employee_journey_ids:
-                frappe.db.set_value("CheckIn Journey", journey_id, "ec_submitted", 1)
-                updated_journeys.append(journey_id)
-
-            frappe.db.commit()
+            journeys_to_update.extend(employee_journey_ids)
             total_claims += 1
 
-    except Exception as e:
-        frappe.log_error("Monthly Travel Expense Scheduler Error", frappe.get_traceback())
+        # ------------------------------------------------------------------
+        # Bulk update journeys ONLY if claim created
+        # ------------------------------------------------------------------
+        if journeys_to_update:
+            frappe.db.set_value(
+                "Checkin Journey",
+                {"name": ["in", journeys_to_update]},
+                "ec_submitted",
+                1,
+            )
+
+        frappe.db.commit()
+
+        frappe.logger().info(
+            f"Travel Expense Completed: {total_claims} claims, "
+            f"{len(journeys_to_update)} journeys updated"
+        )
+
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(),
+            "Monthly Travel Expense Scheduler Error",
+        )
+        raise
