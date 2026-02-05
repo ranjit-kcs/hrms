@@ -223,7 +223,7 @@ doc_events = {
 
 scheduler_events = {
 	"cron": {
-		"30 12 5 * *": [
+		"20 15 5 * *": [
 			"hrms.api.expense_claim_calculation.calculate_monthly_travel_expenses"
 		]
 	},
