@@ -27,17 +27,8 @@ def login(email, password, device_id):
         "home_page": "/hrms/home"
     }
 
-
-
 @frappe.whitelist()
 def reset_user_device_id(user):
-    """Reset the device_id of a user to empty string."""
-    # Optional: check permission
-    if not frappe.has_permission("User", "write"):
-        frappe.throw("Not permitted to reset device ID")
-
-    # Reset the field
-    frappe.db.set_value("User", user, "device_id", "")
-    frappe.db.commit()
-
-    return {"message": "Device ID reset successfully."}
+    if device_id := frappe.db.get_value("User", user, "device_id"):
+        frappe.db.set_value("User", user, "device_id", None)
+        return {"message": "Device ID reset successfully."}
