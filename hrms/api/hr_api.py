@@ -122,10 +122,6 @@ def create_checkin_journey(**kwargs):
             "message": str(e)
         }
     
-
-
-
-
 @frappe.whitelist(allow_guest=True)
 def save_location():
     payload = frappe.local.form_dict.get("payload")
@@ -159,7 +155,7 @@ def save_location():
         position = raw.get("position")
 
     # --------------------------------------------------
-    # 🔹 STEP 2: DISPLAY NAME (PRIORITY ORDER)
+    # 🔹 STEP 2: DISPLAY NAME
     # --------------------------------------------------
     displayname = (
         data.get("display_name")
@@ -183,7 +179,7 @@ def save_location():
         latitude, longitude = map(float, position.split(","))
 
     # --------------------------------------------------
-    # 🔹 STEP 4: ADDRESS FIELDS (UNIFIED)
+    # 🔹 STEP 4: ADDRESS FIELDS
     # --------------------------------------------------
     road = (
         address.get("road")
@@ -221,46 +217,10 @@ def save_location():
     )
 
     # --------------------------------------------------
-    # 🔹 STEP 5: BOUNDING BOX (ALL FORMATS)
-    # Always → [south, north, west, east]
-    # --------------------------------------------------
-    boundingbox = None
-
-    # OpenStreet
-    if isinstance(data.get("boundingbox"), list) and len(data["boundingbox"]) == 4:
-        boundingbox = data["boundingbox"]
-
-    # Azure
-    elif address.get("boundingBox"):
-        bbox = address["boundingBox"]
-        ne_lat, ne_lon = map(str.strip, bbox["northEast"].split(","))
-        sw_lat, sw_lon = map(str.strip, bbox["southWest"].split(","))
-        boundingbox = [sw_lat, ne_lat, sw_lon, ne_lon]
-
-    # GeoJSON
-    elif raw.get("bbox") and len(raw["bbox"]) == 4:
-        west, south, east, north = raw["bbox"]
-        boundingbox = [str(south), str(north), str(west), str(east)]
-
-    # Fallback → generate small box
-    elif latitude and longitude:
-        d = 0.0001
-        boundingbox = [
-            str(latitude - d),
-            str(latitude + d),
-            str(longitude - d),
-            str(longitude + d)
-        ]
-
-    if not boundingbox:
-        frappe.throw("Unable to resolve bounding box")
-
-    # --------------------------------------------------
-    # 🔹 STEP 6: SAVE DOC
+    # 🔹 STEP 5: SAVE DOC (NO BOUNDING BOX)
     # --------------------------------------------------
     doc = frappe.new_doc("Location Description")
     doc.display_name = displayname
-    doc.bounding_box = json.dumps(boundingbox)
     doc.latitude = latitude
     doc.longitude = longitude
     doc.road = road
@@ -278,8 +238,6 @@ def save_location():
         "latitude": latitude,
         "longitude": longitude
     }
-
-
 
 # @frappe.whitelist(allow_guest=True)
 # def find_location_by_latlon(lat, lon, buffer=0.0001):

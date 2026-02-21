@@ -72,6 +72,11 @@ const routes = [
 		name: "InvalidEmployee",
 		component: () => import("@/views/InvalidEmployee.vue"),
 	},
+	{
+		path: "/checkin/confirm",
+		name: "CheckinConfirm",
+		component: () => import("@/components/CheckinConfirm.vue"),
+	},
 	...attendanceRoutes,
 	...leaveRoutes,
 	...claimRoutes,
