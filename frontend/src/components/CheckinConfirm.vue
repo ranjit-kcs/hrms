@@ -518,7 +518,7 @@ function validateLocation() {
 
     //  If IN - directly submit
     if (action === "IN") {
-      //   submitLog(nextAction.value.action);
+      submitLog(action);
     } else {
       //  OUT → verify boundary using last check-in coordinates
       const lastLat = parseFloat(lastLog.value.latitude);
@@ -533,7 +533,7 @@ function validateLocation() {
       );
 
       if (dist <= defaultRadius) {
-        // submitLog(nextAction.value.action);
+       submitLog(action);
       } else {
         statusMsg.value = "You Are Outside The Work-From-Home Allowed Boundary";
 
