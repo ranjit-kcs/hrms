@@ -131,6 +131,18 @@ const nextAction = computed(() => {
 });
 
 function goToCheckinPage() {
+  const userAgent = navigator.userAgent.toLowerCase()
+  const isMobile = /android|iphone|ipad/.test(userAgent)
+  if (!isMobile) {
+    toast({
+      title: __("Not Allowed"),
+      text: __("Check-in allowed only from Android or iOS devices"),
+      icon: "x-circle",
+      position: "top-center",
+      timeout: 3000,
+    })
+    return
+  }
   if(geofence.data.length === 0 && employee.data.field_employee !='Yes'){
 		toast({
           title: __("Required"),
