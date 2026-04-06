@@ -28,7 +28,6 @@
     "build-roster": "cd roster && yarn build"
   },
   "dependencies": {
-    "@capacitor/device": "^8.0.2",
     "@fingerprintjs/fingerprintjs": "^5.0.1",
     "face-api.js": "^0.22.2",
     "html2canvas": "^1.4.1"
