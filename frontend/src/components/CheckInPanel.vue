@@ -133,13 +133,6 @@ const nextAction = computed(() => {
 
 async function goToCheckinPage() {
   const info = await Device.getInfo()
-  toast({
-    title: info.platform,   // will show "web" / "android" / "ios"
-    text: "hello test",
-    icon: "info",
-    position: "top-center",
-    timeout: 3000,
-  })
   if (info.platform === "web") {
     toast({
       title: __("Not Allowed"),
