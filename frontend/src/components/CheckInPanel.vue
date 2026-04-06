@@ -44,6 +44,7 @@ import { formatTimestamp } from "@/utils/formatters"
 import { useIonRouter ,onIonViewWillEnter} from "@ionic/vue"
 import { getRuntimeConfig } from "@/utils/runtimeConfig";
 import { getRuntimeURLConfig } from "../utils/runtimeURLConfig"
+import { Device } from "@capacitor/device"
 
 
 let azure_key = ref("")
@@ -130,13 +131,19 @@ const nextAction = computed(() => {
   return { action: "IN", label: __("Check In") };
 });
 
-function goToCheckinPage() {
-  const userAgent = navigator.userAgent.toLowerCase()
-  const isMobile = /android|iphone|ipad/.test(userAgent)
-  if (!isMobile) {
+async function goToCheckinPage() {
+  const info = await Device.getInfo()
+  toast({
+    title: info.platform,   // will show "web" / "android" / "ios"
+    text: "hello test",
+    icon: "info",
+    position: "top-center",
+    timeout: 3000,
+  })
+  if (info.platform === "web") {
     toast({
       title: __("Not Allowed"),
-      text: __("Check-in allowed only from Android or iOS devices"),
+      text: __("Check-in allowed only from the HRMS mobile app"),
       icon: "x-circle",
       position: "top-center",
       timeout: 3000,
