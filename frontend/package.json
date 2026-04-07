@@ -12,8 +12,6 @@
 		"copy-html-entry": "cp ../hrms/public/frontend/index.html ../hrms/www/hrms.html"
 	},
 	"dependencies": {
-		"@capacitor/core": "^8.0.0",
-		"@capacitor/device": "^8.0.2",
 		"@fingerprintjs/fingerprintjs": "^5.0.1",
 		"@ionic/vue": "^7.4.3",
 		"@ionic/vue-router": "^7.4.3",

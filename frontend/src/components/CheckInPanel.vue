@@ -44,7 +44,6 @@ import { formatTimestamp } from "@/utils/formatters"
 import { useIonRouter ,onIonViewWillEnter} from "@ionic/vue"
 import { getRuntimeConfig } from "@/utils/runtimeConfig";
 import { getRuntimeURLConfig } from "../utils/runtimeURLConfig"
-import { Device } from "@capacitor/device"
 
 
 let azure_key = ref("")
@@ -132,8 +131,9 @@ const nextAction = computed(() => {
 });
 
 async function goToCheckinPage() {
-  const info = await Device.getInfo()
-  if (info.platform === "web") {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+
+  if (!isStandalone) {
     toast({
       title: __("Not Allowed"),
       text: __("Check-in allowed only from the HRMS mobile app"),
