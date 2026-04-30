@@ -630,6 +630,8 @@ def get_leave_types(employee: str, date: str) -> list:
 	return leave_types
 
 
+# -----------version 15 ---------------------------------
+
 # Expense Claims
 @frappe.whitelist()
 def get_expense_claims(
@@ -673,6 +675,50 @@ def get_expense_claims(
 
 	return claims
 
+# -----------version 16 ---------------------------------
+# @frappe.whitelist()
+# def get_expense_claims(
+#     employee: str,
+#     approver_id: str | None = None,
+#     for_approval: bool = False,
+#     limit: int | None = None,
+# ) -> list[dict]:
+
+#     filters = get_filters("Expense Claim", employee, approver_id, for_approval)
+
+#     fields = [
+#         "`tabExpense Claim`.name",
+#         "`tabExpense Claim`.posting_date",
+#         "`tabExpense Claim`.employee",
+#         "`tabExpense Claim`.employee_name",
+#         "`tabExpense Claim`.approval_status",
+#         "`tabExpense Claim`.status",
+#         "`tabExpense Claim`.expense_approver",
+#         "`tabExpense Claim`.total_claimed_amount",
+#         "`tabExpense Claim`.company",
+#         "`tabExpense Claim`.creation",
+#         "`tabExpense Claim Detail`.expense_type",
+
+#         {"COUNT": "`tabExpense Claim Detail`.expense_type", "as": "total_expenses"},
+#     ]
+
+#     if workflow_state_field := get_workflow_state_field("Expense Claim"):
+#         fields.append(workflow_state_field)
+
+#     claims = frappe.get_list(
+#         "Expense Claim",
+#         fields=fields,
+#         filters=filters,
+#         order_by="`tabExpense Claim`.posting_date desc",
+#         group_by="`tabExpense Claim`.name",
+#         limit=limit,
+#     )
+
+#     if workflow_state_field:
+#         for claim in claims:
+#             claim["workflow_state_field"] = workflow_state_field
+
+#     return claims
 
 @frappe.whitelist()
 def get_expense_claim_summary(employee: str) -> dict:

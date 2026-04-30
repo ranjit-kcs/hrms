@@ -1,139 +1,146 @@
 <template>
-	<ion-page>
-		<ion-content class="ion-padding">
-			<div class="flex flex-col h-screen w-screen">
-				<div class="w-full sm:w-96">
-					<header
-						class="flex flex-row bg-white shadow-sm py-4 px-3 items-center justify-between border-b sticky top-0 z-10"
-					>
-						<div class="flex flex-row items-center">
-							<Button
-								variant="ghost"
-								class="!pl-0 hover:bg-white"
-								@click="router.back()"
-							>
-								<FeatherIcon name="chevron-left" class="h-5 w-5" />
-							</Button>
-							<h2 class="text-xl font-semibold text-gray-900">{{ __("Profile") }}</h2>
-						</div>
-					</header>
+  <div class="min-h-screen bg-gray-100 flex ">
+    <div class="w-full sm:w-96 flex flex-col min-h-screen">
+      
+      <!-- Header -->
+      <header
+        class="flex items-center bg-white shadow-sm py-4 px-3 border-b sticky top-0 z-10"
+      >
+        <Button
+          variant="ghost"
+          class="!pl-0 hover:bg-white"
+          @click="router.back()"
+        >
+          <FeatherIcon name="chevron-left" class="h-5 w-5" />
+        </Button>
 
-					<div class="flex flex-col items-center mt-5 p-4">
-						<!-- Profile Image -->
-						<img
-							v-if="user.data.user_image"
-							class="h-24 w-24 rounded-full object-cover"
-							:src="user.data.user_image"
-							:alt="user.data.first_name"
-						/>
-						<div
-							v-else
-							class="flex items-center justify-center bg-gray-200 uppercase text-gray-600 h-24 w-24 rounded-full object-cover"
-						>
-							{{ user.data.first_name[0] }}
-						</div>
+        <h2 class="text-xl font-semibold text-gray-900 ml-2">
+          {{ __("Profile") }}
+        </h2>
+      </header>
 
-						<div class="flex flex-col gap-1.5 items-center mt-2 mb-5">
-							<span v-if="employee" class="text-lg font-bold text-gray-900">{{
-								employee?.data?.employee_name
-							}}</span>
-							<span v-if="employee" class="font-normal text-sm text-gray-500">{{
-								employee?.data?.designation
-							}}</span>
-						</div>
+      <!-- Content -->
+      <div class="flex-1 px-4 py-6 overflow-y-auto">
+        <!-- Profile -->
+        <div class="flex flex-col items-center">
+          <img
+            v-if="user.data.user_image"
+            class="h-24 w-24 rounded-full object-cover"
+            :src="user.data.user_image"
+          />
 
-						<!-- Profile Links -->
-						<div class="flex flex-col gap-5 my-4 w-full">
-							<div class="flex flex-col bg-white rounded">
-								<div
-									class="flex flex-row cursor-pointer flex-start p-4 items-center justify-between border-b"
-									v-for="link in profileLinks"
-									:key="link.title"
-									@click="openInfoModal(link)"
-								>
-									<div class="flex flex-row items-center gap-3 grow">
-										<FeatherIcon
-											:name="link.icon"
-											class="h-5 w-5 text-gray-500"
-										/>
-										<div class="text-base font-normal text-gray-800">
-											{{ link.title }}
-										</div>
-									</div>
-									<FeatherIcon
-										name="chevron-right"
-										class="h-5 w-5 text-gray-500"
-									/>
-								</div>
-							</div>
-						</div>
+          <div
+            v-else
+            class="h-24 w-24 rounded-full bg-gray-300 flex items-center justify-center text-2xl font-bold text-gray-700"
+          >
+            {{ user.data.first_name[0] }}
+          </div>
 
-						<!-- Settings -->
-						<div
-							class="flex flex-col gap-5 my-4 w-full"
-							v-if="allowPushNotifications"
-						>
-							<div class="flex flex-col bg-white rounded">
-								<router-link
-									:to="{ name: 'Settings' }"
-									class="flex flex-row cursor-pointer flex-start p-4 items-center justify-between border-b"
-								>
-									<div class="flex flex-row items-center gap-3 grow">
-										<FeatherIcon
-											name="settings"
-											class="h-5 w-5 text-gray-500"
-										/>
-										<div class="text-base font-normal text-gray-800">
-											{{ __("Settings") }}
-										</div>
-									</div>
-									<FeatherIcon
-										name="chevron-right"
-										class="h-5 w-5 text-gray-500"
-									/>
-								</router-link>
-							</div>
-						</div>
+          <h3 class="mt-4 text-xl font-bold text-gray-900">
+            {{ employee?.data?.employee_name }}
+          </h3>
 
-						<Button
-							@click="logout"
-							variant="outline"
-							theme="red"
-							class="w-full shadow py-4 mt-5"
-						>
-							<template #prefix>
-								<FeatherIcon name="log-out" class="w-4" />
-							</template>
-							{{ __("Log Out") }}
-						</Button>
-					</div>
-				</div>
-			</div>
+          <p class="text-sm text-gray-500">
+            {{ employee?.data?.designation }}
+          </p>
+        </div>
 
-			<ion-modal
-				ref="modal"
-				:is-open="isInfoModalOpen"
-				@didDismiss="closeInfoModal"
-				:initial-breakpoint="1"
-				:breakpoints="[0, 1]"
-			>
-				<ProfileInfoModal
-					:title="selectedItem.title"
-					:data="
-						selectedItem.fields.map((field) => {
-							const [label, fieldtype] = getFieldInfo(field)
-							return {
-								fieldname: field,
-								value: employeeDoc.doc[field],
-								label: label,
-								fieldtype: fieldtype,
-							}
-						})
-					"
-				/>
-			</ion-modal>
-		</ion-content>
-	</ion-page>
+        <!-- Menu -->
+        <div class="bg-white rounded-xl mt-6 overflow-hidden shadow-sm">
+          <div
+            v-for="link in profileLinks"
+            :key="link.title"
+            @click="openInfoModal(link)"
+            class="flex justify-between items-center px-4 py-4 border-b last:border-b-0 cursor-pointer"
+          >
+            <div class="flex items-center gap-3">
+              <FeatherIcon
+                :name="link.icon"
+                class="h-5 w-5 text-gray-500"
+              />
+              <span class="text-gray-800">
+                {{ link.title }}
+              </span>
+            </div>
+
+            <FeatherIcon
+              name="chevron-right"
+              class="h-5 w-5 text-gray-400"
+            />
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div
+          v-if="allowPushNotifications"
+          class="bg-white rounded-xl mt-4 overflow-hidden shadow-sm"
+        >
+          <router-link
+            :to="{ name: 'Settings' }"
+            class="flex justify-between items-center px-4 py-4"
+          >
+            <div class="flex items-center gap-3">
+              <FeatherIcon
+                name="settings"
+                class="h-5 w-5 text-gray-500"
+              />
+              <span class="text-gray-800">
+                {{ __("Settings") }}
+              </span>
+            </div>
+
+            <FeatherIcon
+              name="chevron-right"
+              class="h-5 w-5 text-gray-400"
+            />
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Bottom Logout Button -->
+      <div class="p-4 bg-gray-100">
+        <Button
+          @click="logout"
+          variant="outline"
+          theme="red"
+          class="w-full py-4"
+        >
+          <template #prefix>
+            <FeatherIcon name="log-out" class="w-4" />
+          </template>
+
+          {{ __("Log Out") }}
+        </Button>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      v-if="isInfoModalOpen"
+      class="fixed inset-0 bg-black/40 z-50 flex items-end justify-center"
+      @click.self="closeInfoModal"
+    >
+      <div
+        class="bg-white w-full sm:w-96 rounded-t-2xl p-4 max-h-[85vh] overflow-y-auto"
+      >
+        <ProfileInfoModal
+          :title="selectedItem.title"
+          :data="
+            selectedItem.fields.map((field) => {
+              const [label, fieldtype] = getFieldInfo(field)
+
+              return {
+                fieldname: field,
+                value: employeeDoc.doc[field],
+                label,
+                fieldtype,
+              }
+            })
+          "
+        />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>

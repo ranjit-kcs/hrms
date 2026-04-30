@@ -38,7 +38,7 @@
 
 <script setup>
 import { createResource, createListResource, FeatherIcon,toast } from "frappe-ui"
-import { computed, inject,onMounted,watch,ref } from "vue"
+import { computed, inject,watch,ref,onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { formatTimestamp } from "@/utils/formatters"
 import { useIonRouter ,onIonViewWillEnter} from "@ionic/vue"
@@ -52,8 +52,8 @@ let distance_response = ref("")
 let location_url = ref("")
 let location_response = ref("")
 
-onIonViewWillEnter(() => {
-	console.log("view");
+onMounted(() => {
+	// console.log("view");
   checkins.reload()
   
 })
@@ -71,8 +71,7 @@ watch(
 )
 
 const DOCTYPE = "Employee Checkin"
-
-const ionRouter = useIonRouter()
+const router = useRouter()
 const employee = inject("$employee")
 const user = inject("$user")
 const dayjs = inject("$dayjs")
@@ -98,15 +97,16 @@ const checkins = createListResource({
   filters: { employee: employee.data.name },
   orderBy: "time desc",
 })
-
+// console.log(checkins);
 const lastLog = computed(() => {
   if (checkins.list.loading || !checkins.data) return null
   return checkins.data[0]
 })
-
+// console.log(lastLog);
 const lastLogType = computed(() => {
   return lastLog?.value?.log_type === "IN" ? "check-in" : "check-out"
 })
+// console.log(lastLogType);
 
 // const nextAction = computed(() => {
 //   return lastLog?.value?.log_type === "IN"
@@ -118,6 +118,7 @@ const nextAction = computed(() => {
   if (!log || !log.time) {
     return { action: "IN", label: __("Check In") };
   }
+// console.log(nextAction);
 
   const lastLogDate = log.time.split(" ")[0]; // YYYY-MM-DD
   const todayDate = new Date().toISOString().split("T")[0];
@@ -131,6 +132,19 @@ const nextAction = computed(() => {
 });
 
 function goToCheckinPage() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+
+  if (!isStandalone) {
+    toast({
+      title: __("Not Allowed"),
+      text: __("Check-in allowed only from the HRMS mobile app"),
+      icon: "x-circle",
+      position: "top-center",
+      timeout: 3000,
+    })
+    return
+  }
+
   if(geofence.data.length === 0 && employee.data.field_employee !='Yes'){
 		toast({
           title: __("Required"),
@@ -196,7 +210,7 @@ function goToCheckinPage() {
     return
   }
 	if (settings.data?.allow_geolocation_tracking) {
-    ionRouter.push({
+    router.push({
   name: "CheckinConfirm",
   query: {
     action: nextAction.value.action,
