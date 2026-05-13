@@ -57,7 +57,7 @@
             readonly
             class="w-full border rounded-lg px-3 py-2 mt-1 bg-gray-100"
           /> -->
-          <FormControl type="text" size="sm" variant="outline" placeholder="Enter Latitude" v-model="latitude" :input-class="inputCls" />
+          <FormControl type="text" size="sm" variant="outline" placeholder="Enter Latitude" v-model="latitude" :input-class="inputCls" :disabled="true"/>
 
         </div>
 
@@ -73,7 +73,7 @@
             readonly
             class="w-full border rounded-lg px-3 py-2 mt-1 bg-gray-100"
           /> -->
-          <FormControl type="text" size="sm" variant="outline" placeholder="Enter Longitude" v-model="longitude" :input-class="inputCls" />
+          <FormControl type="text" size="sm" variant="outline" placeholder="Enter Longitude" v-model="longitude" :input-class="inputCls" :disabled="true"/>
               
         </div>
 
