@@ -1,5 +1,6 @@
 import frappe
 import json
+from frappe import _
 
 # -------------------- GET ALL --------------------
 @frappe.whitelist()
@@ -333,4 +334,43 @@ def find_location_by_latlon(lat, lon, radius=300):
         "found": False,
         "message": "No location found within meters"
     }
+
+
+@frappe.whitelist(allow_guest=False)
+def create_location(location=None, latitude=None, longitude=None):
+    try:
+        # Validation
+        if not location:
+            frappe.throw(_("Location name is required"))
+
+        if not latitude:
+            frappe.throw(_("Latitude is required"))
+
+        if not longitude:
+            frappe.throw(_("Longitude is required"))
+
+        # Create Location Doc
+        doc = frappe.get_doc({
+            "doctype": "Location",
+            "location_name": location,
+            "latitude": latitude,
+            "longitude": longitude,
+        })
+
+        doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": "Location created successfully",
+            "name": doc.name
+        }
+
+    except Exception as e:
+        frappe.log_error(
+            title="Create Location API Error",
+            message=frappe.get_traceback()
+        )
+
+        frappe.throw(_(str(e)))
 

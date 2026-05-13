@@ -726,7 +726,7 @@ function validateLocation() {
       faceMatched.value = false
       statusMsg.value   = allFences.length === 0
         ? "Geofence is Missing, Contact your HR"
-        : "Matched but Outside Allowed Office Boundary"
+        : "Matched"
       isValidLocation   = false
     }
 

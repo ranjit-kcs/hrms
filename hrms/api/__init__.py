@@ -630,7 +630,7 @@ def get_leave_types(employee: str, date: str) -> list:
 	return leave_types
 
 
-# -----------version 15 ---------------------------------
+# ----------- version 15 ---------------------------------
 
 # Expense Claims
 @frappe.whitelist()
