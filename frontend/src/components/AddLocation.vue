@@ -120,6 +120,11 @@ function closeDialog() {
   latitude.value = ""
   longitude.value = ""
 }
+function getCookie(name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(";").shift()
+}
 
 function fetchCurrentLocation() {
   if (!navigator.geolocation) {
@@ -173,16 +178,14 @@ async function createLocation() {
   }
 
   loading.value = true
-
+  const csrf = window?.frappe?.csrf_token || window?.csrf_token || getCookie("csrf_token")
   try {
     const response = await fetch(
       "/api/method/hrms.api.hr_api.create_location",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         credentials: "include",
+        headers: { "Content-Type": "application/json", "X-Frappe-CSRF-Token": csrf },
         body: JSON.stringify({
           location: location.value,
           latitude: latitude.value,
