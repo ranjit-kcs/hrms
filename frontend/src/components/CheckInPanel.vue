@@ -53,7 +53,7 @@ let location_url = ref("")
 let location_response = ref("")
 
 onMounted(() => {
-	// console.log("view");
+
   checkins.reload()
   
 })
@@ -98,28 +98,21 @@ const checkins = createListResource({
   filters: { employee: employee.data.name },
   orderBy: "time desc",
 })
-// console.log(checkins);
+
 const lastLog = computed(() => {
   if (checkins.list.loading || !checkins.data) return null
   return checkins.data[0]
 })
-// console.log(lastLog);
+
 const lastLogType = computed(() => {
   return lastLog?.value?.log_type === "IN" ? "check-in" : "check-out"
 })
-// console.log(lastLogType);
 
-// const nextAction = computed(() => {
-//   return lastLog?.value?.log_type === "IN"
-//     ? { action: "OUT", label: __("Check Out") }
-//     : { action: "IN", label: __("Check In") }
-// })
 const nextAction = computed(() => {
   const log = lastLog?.value;
   if (!log || !log.time) {
     return { action: "IN", label: __("Check In") };
   }
-// console.log(nextAction);
 
   const lastLogDate = log.time.split(" ")[0]; // YYYY-MM-DD
   const todayDate = new Date().toISOString().split("T")[0];
@@ -154,7 +147,6 @@ function goToCheckinPage() {
     const hasTodayDate = item.choose_date?.some((d) => d.date === today)
     return sameEmployee && hasTodayDate
   })
-console.log("Allow",employee.data.allow_non_mobile_checkin);
 const allowNonMobile = employee.data.allow_non_mobile_checkin == 1
 if (!wfhRecordForToday && !allowNonMobile) {
   toast({
