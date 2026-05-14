@@ -55,6 +55,7 @@ def get_current_employee_info() -> dict:
 			"company",
 			"reports_to",
 			"field_employee",
+			"allow_non_mobile_checkin",
 			"user_id",
 		],
 		as_dict=True,

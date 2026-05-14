@@ -77,6 +77,7 @@ const user = inject("$user")
 const dayjs = inject("$dayjs")
 const __ = inject("$translate")
 const geofence = inject("$geofence")
+const wfh = inject("$wfh")
 
 const settings = createResource({
   url: "hrms.api.get_hr_settings",
@@ -144,6 +145,26 @@ function goToCheckinPage() {
     })
     return
   }
+  const today = new Date().toISOString().split("T")[0]
+
+  const wfhRecordForToday = wfh.data.find((item) => {
+    const sameEmployee = item.employee_wfh_details?.some(
+      (d) => d.employee === employee.data.name
+    )
+    const hasTodayDate = item.choose_date?.some((d) => d.date === today)
+    return sameEmployee && hasTodayDate
+  })
+console.log("Allow",employee.data.allow_non_mobile_checkin);
+const allowNonMobile = employee.data.allow_non_mobile_checkin == 1
+if (!wfhRecordForToday && !allowNonMobile) {
+  toast({
+    title: __("Not Allowed"),
+    text: __("Non-mobile punching is not allowed"),
+    icon: "x-circle",
+    position: "top-center",
+  })
+  return
+}
 
   if(geofence.data.length === 0 && employee.data.field_employee !='Yes'){
 		toast({
