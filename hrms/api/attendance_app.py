@@ -1,7 +1,9 @@
 import frappe
+import os
+import base64
 from frappe import _
-from frappe.utils import today
-from frappe.utils import get_first_day, get_last_day, today
+from frappe.utils import today, add_days
+from frappe.utils import get_first_day, get_last_day
 from frappe.utils import cint
 from frappe.utils import getdate, now_datetime
 from datetime import datetime, timedelta
@@ -48,6 +50,8 @@ def login(email, password, device_id):
 
     return {
         "status": "device_match" if user.device_id else "first_login",
+        "sid": frappe.session.sid,
+        "user": user.name,
         "message": "Logged In",
     }
 
@@ -194,7 +198,7 @@ def get_dashboard_summary():
 
 	return {
 		"attendance_request_count": frappe.db.count(
-			"Attendance Request",
+			"Attendance Regularization",
 			{
 				"employee": employee_name,
 				"from_date": ["between", [first_day, last_day]]
@@ -305,11 +309,15 @@ def get_employee_holidays(start_date=None, end_date=None):
 	if not employee:
 		return []
 
-	if not employee.holiday_list:
+	from hrms.hrms.utils.holiday_list import get_holiday_list_for_employee
+	ref_date = start_date or today()
+	holiday_list = get_holiday_list_for_employee(employee.name, raise_exception=False, as_on=ref_date)
+
+	if not holiday_list:
 		return []
 
 	filters = {
-		"parent": employee.holiday_list
+		"parent": holiday_list
 	}
 	if start_date and end_date:
 		filters["holiday_date"] = ["between", [start_date, end_date]]
@@ -333,29 +341,31 @@ def get_employee_holidays(start_date=None, end_date=None):
 # =========================================================
 
 @frappe.whitelist()
-def get_attendance_requests(limit=10, page=1):
-
-	employee = get_current_employee_info()
-
-	if not employee:
-		return []
-
+def get_attendance_requests(limit=10, page=1, all_employees=0):
 	start = (int(page) - 1) * int(limit)
+	filters = {}
+
+	if not cint(all_employees) or "System Manager" not in frappe.get_roles():
+		employee = get_current_employee_info()
+		if not employee:
+			return []
+		filters["employee"] = employee.name
 
 	return frappe.get_all(
-		"Attendance Request",
-		filters={
-			"employee": employee.name
-		},
+		"Attendance Regularization",
+		filters=filters,
 		fields=[
 			"name",
+			"employee",
+			"employee_name",
 			"from_date",
 			"to_date",
 			"reason",
 			"explanation",
 			"half_day",
 			"docstatus",
-			"creation"
+			"creation",
+			"workflow_state"
 		],
 		order_by="creation desc",
 		start=start,
@@ -368,22 +378,23 @@ def get_attendance_requests(limit=10, page=1):
 # =========================================================
 
 @frappe.whitelist()
-def get_leave_applications(limit=10, page=1):
-
-	employee = get_current_employee_info()
-
-	if not employee:
-		return []
-
+def get_leave_applications(limit=10, page=1, all_employees=0):
 	start = (int(page) - 1) * int(limit)
+	filters = {}
+
+	if not cint(all_employees) or "System Manager" not in frappe.get_roles():
+		employee = get_current_employee_info()
+		if not employee:
+			return []
+		filters["employee"] = employee.name
 
 	return frappe.get_all(
 		"Leave Application",
-		filters={
-			"employee": employee.name
-		},
+		filters=filters,
 		fields=[
 			"name",
+			"employee",
+			"employee_name",
 			"leave_type",
 			"from_date",
 			"to_date",
@@ -409,7 +420,7 @@ def create_attendance_request(
 ):
     try:
         doc = frappe.get_doc({
-            "doctype": "Attendance Request",
+            "doctype": "Attendance Regularization",
             "employee": employee,
             "reason": reason,
             "from_date": from_date,
@@ -421,14 +432,14 @@ def create_attendance_request(
 
         return {
             "success": True,
-            "message": "Attendance Request Created Successfully",
+            "message": "Attendance Regularization Created Successfully",
             "name": doc.name
         }
 
     except Exception as e:
         frappe.log_error(
             frappe.get_traceback(),
-            "Create Attendance Request Error"
+            "Create Attendance Regularization Error"
         )
 
         return {
@@ -730,5 +741,455 @@ def get_all_car():
         frappe.log_error(frappe.get_traceback(), "CAR - GetAll Error")
         frappe.local.response["http_status_code"] = 500
         return {"success": False, "message": "Failed to fetch CAR records"}
-     
+
+@frappe.whitelist()
+def get_all_employees(search_term="", limit=50):
+    try:
+        filters = {"status": "Active"}
+        if search_term:
+            docs = frappe.get_all("Employee", fields=["name", "employee_name", "user_id"], or_filters=[
+                ["Employee", "name", "like", f"%{search_term}%"],
+                ["Employee", "employee_name", "like", f"%{search_term}%"]
+            ], filters=filters, limit=limit, ignore_permissions=True)
+        else:
+            docs = frappe.get_all("Employee", fields=["name", "employee_name", "user_id"], filters=filters, limit=limit, ignore_permissions=True)
+        return {"success": True, "data": docs}
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Employee - GetAll Error")
+        frappe.local.response["http_status_code"] = 500
+        return {"success": False, "message": "Failed to fetch Employee records"}
+
+@frappe.whitelist()
+def approve_or_reject_requests(doc_type, doc_names, action):
+    if "System Manager" not in frappe.get_roles():
+        frappe.throw(_("Unauthorized: Only System Managers can perform this action."), frappe.PermissionError)
+
+    import json
+    if isinstance(doc_names, str):
+        doc_names = json.loads(doc_names)
+
+    success_count = 0
+    errors = []
+
+    # Get workflow name for this doctype if exists
+    from frappe.model.workflow import get_workflow_name, apply_workflow
+    workflow_name = get_workflow_name(doc_type)
+
+    for name in doc_names:
+        try:
+            doc = frappe.get_doc(doc_type, name)
+
+            if workflow_name:
+                # If there's an active workflow, apply the workflow action
+                # Map action to case-sensitive workflow transition actions
+                wf_action = "Approve" if action == "approve" else "Reject"
+                apply_workflow(doc, wf_action)
+            else:
+                # Default non-workflow logic
+                if doc_type == "Leave Application":
+                    if action == "approve":
+                        doc.status = "Approved"
+                        doc.submit()
+                    elif action == "reject":
+                        doc.status = "Rejected"
+                        doc.submit()
+                elif doc_type in ["Attendance Request", "Attendance Regularization"]:
+                    if action == "approve":
+                        doc.submit()
+                    elif action == "reject":
+                        if doc.docstatus == 1:
+                            doc.cancel()
+                        else:
+                            doc.docstatus = 2
+                            doc.save()
+            success_count += 1
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback(), f"Approve/Reject Error for {name}")
+            errors.append(f"{name}: {str(e)}")
+
+    frappe.db.commit()
+
+    return {
+        "success": len(errors) == 0,
+        "success_count": success_count,
+        "errors": errors
+    }
+
+@frappe.whitelist(allow_guest=False)
+def create_location(location=None, latitude=None, longitude=None):
+
+    try:
+
+        # VALIDATION
+
+        if not location:
+            frappe.throw(_("Location name is required"))
+
+        if not latitude:
+            frappe.throw(_("Latitude is required"))
+
+        if not longitude:
+            frappe.throw(_("Longitude is required"))
+
+        # CHECK EXISTING DRAFT FOR THIS USER
+        existing_draft = frappe.db.exists(
+            "Location",
+            {
+                "owner": frappe.session.user,
+                "workflow_state": "Draft"
+            }
+        )
+        if existing_draft:
+            return {
+                "status": "error",
+                "message": "You already requested wait until approve or reject"
+            }
+
+        # CHECK EXISTING LOCATION
+
+        existing_location = frappe.db.exists(
+            "Location",
+            location
+        )
+
+        if existing_location:
+
+            return {
+                "status": "exists",
+                "message": f"Location {location} already exists",
+                "name": existing_location
+            }
+
+        # CREATE DOC
+
+        doc = frappe.get_doc({
+            "doctype": "Location",
+            "location_name": location,
+            "latitude": latitude,
+            "longitude": longitude,
+        })
+
+        doc.insert(ignore_permissions=True)
+
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": "Location created successfully",
+            "name": doc.name
+        }
+
+    except Exception:
+
+        frappe.log_error(
+            title="Create Location API Error",
+            message=frappe.get_traceback()
+        )
+
+        frappe.throw(_("Failed to create location"))
+        
+@frappe.whitelist()
+def create_user_image_upload(user_image):
+
+    try:
+
+        # -----------------------------------
+        # GET EMPLOYEE FROM USER
+        # -----------------------------------
+
+        employee = frappe.db.get_value(
+            "Employee",
+            {
+                "user_id": frappe.session.user
+            },
+            "name"
+        )
+
+        # CHECK EXISTING USER IMAGE DRAFT
+        existing_draft = frappe.db.exists(
+            "User Image Upload",
+            {
+                "user": frappe.session.user,
+                "workflow_state": "Draft"
+            }
+        )
+        if existing_draft:
+            return {
+                "status": "error",
+                "message": "You already requested wait until approve or reject"
+            }
+
+        # -----------------------------------
+        # MAKE FILE PRIVATE
+        # -----------------------------------
+
+        file_doc = frappe.get_doc(
+            "File",
+            {
+                "file_url": user_image
+            }
+        )
+
+        if not file_doc.is_private:
+
+            file_doc.is_private = 1
+
+            file_doc.save(
+                ignore_permissions=True
+            )
+
+            # refresh private url
+            user_image = file_doc.file_url
+
+        # -----------------------------------
+        # CREATE DOC
+        # -----------------------------------
+
+        doc = frappe.get_doc({
+            "doctype": "User Image Upload",
+            "employee": employee,
+            "user": frappe.session.user,
+            "user_image": user_image
+        })
+
+        doc.insert(ignore_permissions=True)
+
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "name": doc.name
+        }
+
+    except Exception as e:
+
+        frappe.log_error(
+            frappe.get_traceback(),
+            "User Image Upload Error"
+        )
+
+        frappe.throw(str(e))
+
+@frappe.whitelist()
+def create_employee_image_upload(user_image, employee=None):
+
+    try:
+
+        # CHECK EXISTING USER IMAGE DRAFT
+        if employee:
+            existing_draft = frappe.db.exists(
+                "User Image Upload",
+                {
+                    "employee": employee,
+                    "workflow_state": "Draft"
+                }
+            )
+            if existing_draft:
+                return {
+                    "status": "error",
+                    "message": "You already requested, wait for Approval"
+                }
+
+        # -----------------------------------
+        # MAKE FILE PRIVATE
+        # -----------------------------------
+
+        file_doc = frappe.get_doc(
+            "File",
+            {
+                "file_url": user_image
+            }
+        )
+
+        if not file_doc.is_private:
+
+            file_doc.is_private = 1
+
+            file_doc.save(
+                ignore_permissions=True
+            )
+
+            # Refresh updated private path
+            user_image = file_doc.file_url
+
+        # -----------------------------------
+        # CREATE DOC
+        # -----------------------------------
+
+        doc = frappe.get_doc({
+            "doctype": "User Image Upload",
+            "employee": employee,
+            "user_image": user_image
+        })
+
+        doc.insert(ignore_permissions=True)
+
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "name": doc.name,
+            "user_image": user_image
+        }
+
+    except Exception as e:
+
+        frappe.log_error(
+            frappe.get_traceback(),
+            "Employee Image Upload Error"
+        )
+
+        frappe.throw(str(e))                         
  
+@frappe.whitelist()
+def get_all_employees(search_term="", limit=50):
+    try:
+        filters = {"status": "Active"}
+        if search_term:
+            docs = frappe.get_all("Employee", fields=["name", "employee_name", "user_id"], or_filters=[
+                ["Employee", "name", "like", f"%{search_term}%"],
+                ["Employee", "employee_name", "like", f"%{search_term}%"]
+            ], filters=filters, limit=limit, ignore_permissions=True)
+        else:
+            docs = frappe.get_all("Employee", fields=["name", "employee_name", "user_id"], filters=filters, limit=limit, ignore_permissions=True)
+        return {"success": True, "data": docs}
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Employee - GetAll Error")
+        frappe.local.response["http_status_code"] = 500
+        return {"success": False, "message": "Failed to fetch Employee records"}
+
+
+@frappe.whitelist()
+def get_face_reference_image():
+    """
+    Returns the current employee's reference face image as a base64-encoded string.
+    Reading the file directly from disk bypasses the private-file 403 issue entirely.
+    The mobile app should call this once after login and cache the result locally.
+    """
+    current_user = frappe.session.user
+    employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": current_user, "status": "Active"},
+        ["name", "image"],
+        as_dict=True,
+    )
+
+    if not employee:
+        frappe.throw(_("Employee not found"), frappe.DoesNotExistError)
+
+    image_path = employee.get("image") or ""
+
+    # Also check user_image as fallback
+    if not image_path:
+        image_path = frappe.db.get_value("User", current_user, "user_image") or ""
+
+    if not image_path:
+        frappe.throw(_("No profile image found for this employee"), frappe.DoesNotExistError)
+
+    # Resolve to absolute filesystem path
+    # Frappe stores files relative to site e.g. /private/files/... or /files/...
+    site_path = frappe.get_site_path()
+    if image_path.startswith("/private/files/"):
+        abs_path = os.path.join(site_path, "private", "files", os.path.basename(image_path))
+    elif image_path.startswith("/files/"):
+        abs_path = os.path.join(site_path, "public", "files", os.path.basename(image_path))
+    else:
+        # Try to find it directly
+        abs_path = os.path.join(site_path, image_path.lstrip("/"))
+
+    if not os.path.isfile(abs_path):
+        frappe.throw(
+            _("Reference image file not found on server: {0}").format(image_path),
+            frappe.DoesNotExistError
+        )
+
+    with open(abs_path, "rb") as f:
+        image_bytes = f.read()
+
+    encoded = base64.b64encode(image_bytes).decode("utf-8")
+
+    # Detect mime type
+    ext = os.path.splitext(abs_path)[1].lower()
+    mime_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+    mime_type = mime_map.get(ext, "image/jpeg")
+
+    return {
+        "mime_type": mime_type,
+        "data": encoded,   # raw base64 string — prefix with "data:<mime>;base64," on client
+        "image_path": image_path,
+    }
+
+@frappe.whitelist()
+def get_yesterday_attendance_status():
+    employee = get_current_employee_info()
+    if not employee:
+        return {"show_message": False}
+
+    yesterday_date = add_days(today(), -1)
+
+    # Check if there is an attendance record for yesterday
+    attendance = frappe.db.get_value(
+        "Attendance",
+        {"employee": employee.name, "attendance_date": yesterday_date},
+        ["status"],
+        as_dict=True
+    )
+
+    if attendance:
+        status = attendance.status
+    else:
+        # Check if yesterday was a holiday (weekly off or public holiday)
+        from hrms.hrms.utils.holiday_list import get_holiday_list_for_employee
+        holiday_list = get_holiday_list_for_employee(employee.name, raise_exception=False, as_on=yesterday_date)
+
+        holiday = None
+        if holiday_list:
+            holiday = frappe.db.exists(
+                "Holiday",
+                {
+                    "parent": holiday_list,
+                    "holiday_date": yesterday_date
+                }
+            )
+
+        if holiday:
+            status = "Holiday"
+        else:
+            # Check if there is an approved or pending leave application for yesterday
+            leave_exists = frappe.db.exists(
+                "Leave Application",
+                {
+                    "employee": employee.name,
+                    "docstatus": ["in", [0, 1]],  # Draft or Submitted
+                    "from_date": ["<=", yesterday_date],
+                    "to_date": [">=", yesterday_date]
+                }
+            )
+            if leave_exists:
+                status = "On Leave"
+            else:
+                # Check if there is a pending regularization
+                regularization_exists = frappe.db.exists(
+                    "Attendance Regularization",
+                    {
+                        "employee": employee.name,
+                        "docstatus": ["in", [0, 1]],  # Draft or Submitted
+                        "from_date": ["<=", yesterday_date],
+                        "to_date": [">=", yesterday_date]
+                    }
+                )
+                if regularization_exists:
+                    status = "Present"
+                else:
+                    status = "Absent"
+
+    # Message: "Yesterday Attendance: Present" or "Yesterday Attendance: Absent", etc.
+    message = f"Yesterday Attendance : {status}"
+
+    return {
+        "show_message": True,
+        "status": status,
+        "date": yesterday_date,
+        "message": message
+    }
+
