@@ -41,20 +41,38 @@ def login(email, password, device_id):
 		frappe.throw("Invalid credentials")
 
 	if user.device_id and user.device_id != device_id:
-		frappe.throw("You are already logged in from another mobile. Contact your HR.")
+		frappe.throw(
+			_(
+				"You are already logged in from another mobile. Contact your HR."
+			)
+		)
 
 	frappe.local.login_manager.authenticate(user=user.name, pwd=password)
 	frappe.local.login_manager.post_login()
 
-	if not user.device_id:
+	is_first_login = not user.device_id
+	if is_first_login:
 		frappe.db.set_value("User", user.name, "device_id", device_id)
+		frappe.db.commit()
 
 	return {
-		"status": "device_match" if user.device_id else "first_login",
+		"status": "first_login" if is_first_login else "device_match",
 		"sid": frappe.session.sid,
 		"user": user.name,
 		"message": "Logged In",
 	}
+
+@frappe.whitelist()
+def reset_user_device_id(user):
+	if "System Manager" not in frappe.get_roles():
+		frappe.throw(_("Unauthorized: Only System Managers can reset device access."), frappe.PermissionError)
+
+	current_device_id = frappe.db.get_value("User", user, "device_id")
+	if not current_device_id:
+		return {"message": "No device ID is registered for this user."}
+
+	frappe.db.set_value("User", user, "device_id", None)
+	return {"message": "Device ID reset successfully."}
 
 
 @frappe.whitelist()
@@ -505,9 +523,7 @@ def get_leave_types():
 	return res
 
 
-@frappe.whitelist()
-def get_hr_settings():
-	return frappe.db.get_value("HR Settings", None, ["not_validate_geolocation"], as_dict=True)
+
 
 
 @frappe.whitelist()
@@ -904,35 +920,7 @@ def create_employee_image_upload(user_image, employee=None):
 		frappe.throw(str(e))
 
 
-@frappe.whitelist()
-def get_all_employees(search_term="", limit=50):
-	try:
-		filters = {"status": "Active"}
-		if search_term:
-			docs = frappe.get_all(
-				"Employee",
-				fields=["name", "employee_name", "user_id"],
-				or_filters=[
-					["Employee", "name", "like", f"%{search_term}%"],
-					["Employee", "employee_name", "like", f"%{search_term}%"],
-				],
-				filters=filters,
-				limit=limit,
-				ignore_permissions=True,
-			)
-		else:
-			docs = frappe.get_all(
-				"Employee",
-				fields=["name", "employee_name", "user_id"],
-				filters=filters,
-				limit=limit,
-				ignore_permissions=True,
-			)
-		return {"success": True, "data": docs}
-	except Exception:
-		frappe.log_error(frappe.get_traceback(), "Employee - GetAll Error")
-		frappe.local.response["http_status_code"] = 500
-		return {"success": False, "message": "Failed to fetch Employee records"}
+
 
 
 @frappe.whitelist()
