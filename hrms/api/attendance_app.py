@@ -300,7 +300,7 @@ def get_employee_holidays(start_date=None, end_date=None):
 	from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
 
 	ref_date = start_date or today()
-	holiday_list = get_holiday_list_for_employee(employee.name, raise_exception=False, as_on=ref_date)
+	holiday_list = get_holiday_list_for_employee(employee.name, raise_exception=False)
 
 	if not holiday_list:
 		return []
@@ -1006,9 +1006,7 @@ def get_yesterday_attendance_status():
 	else:
 		from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
 
-		holiday_list = get_holiday_list_for_employee(
-			employee.name, raise_exception=False, as_on=yesterday_date
-		)
+		holiday_list = get_holiday_list_for_employee(employee.name, raise_exception=False)
 
 		holiday = None
 		if holiday_list:
