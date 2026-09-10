@@ -140,15 +140,8 @@ def get_all_geofence():
 
 # whf api
 @frappe.whitelist()
-def get_all_wfh(employee=None, date):
-	
+def get_all_wfh(employee, date):
     checkin_date = getdate(date)
- 	user = frappe.session.user
-    if not employee and user and user != "Guest":
-        employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
- 
-    if not employee:
-        return []
  
     employee_wfh = frappe.qb.DocType("Employee WFH")
     wfh_date = frappe.qb.DocType("Employee WFH Date")
@@ -179,8 +172,8 @@ def get_all_wfh(employee=None, date):
             )
         )
     ).run(as_dict=True)
- 
-    for r in result:
+
+	for r in result:
         r["date"] = str(checkin_date)
         r["employee_wfh_details"] = [{"employee": r.get("employee")}]
         r["choose_date"] = [{"date": str(checkin_date)}]
