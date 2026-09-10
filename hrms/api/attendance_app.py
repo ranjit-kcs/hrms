@@ -140,38 +140,51 @@ def get_all_geofence():
 
 # whf api
 @frappe.whitelist()
-def get_all_wfh():
-    user = frappe.session.user  
-    wfh_records = frappe.get_all(
-        "Employee WFH",
-        fields="*",  
-		filters= {
-			"docstatus": 1
-		},
-        order_by="creation desc",
-        limit=999999,
-    )
-
-    result = []
-    for record in wfh_records:
-        
-        details = frappe.get_all(
-            "Employee WFH Detail",
-            fields="*",
-            filters={"parent": record.name},
+def get_all_wfh(employee=None, date):
+	
+    checkin_date = getdate(date)
+ 	user = frappe.session.user
+    if not employee and user and user != "Guest":
+        employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+ 
+    if not employee:
+        return []
+ 
+    employee_wfh = frappe.qb.DocType("Employee WFH")
+    wfh_date = frappe.qb.DocType("Employee WFH Date")
+    employee_details = frappe.qb.DocType("Employee WFH Detail")
+ 
+    result = (
+        frappe.qb.from_(employee_wfh)
+        .inner_join(employee_details)
+        .on(employee_details.parent == employee_wfh.name)
+        .left_join(wfh_date)
+        .on(wfh_date.parent == employee_wfh.name)
+        .select(
+            employee_wfh.name,
+            employee_details.employee,
+            employee_wfh.docstatus,
         )
-
-        dates = frappe.get_all(
-            "Employee WFH Date",
-            fields="*",
-            filters={"parent": record.name},
+        .distinct()
+        .where(
+            (employee_details.employee == employee)
+            & (employee_wfh.docstatus == 1)
+            & (
+                (
+                    (employee_wfh.date_type == "Range")
+                    & (employee_wfh.from_date <= checkin_date)
+                    & (employee_wfh.to_date >= checkin_date)
+                )
+                | ((employee_wfh.date_type == "Date") & (wfh_date.date == checkin_date))
+            )
         )
-
-        record["employee_wfh_details"] = details
-        record["choose_date"] = dates
-
-        result.append(record)
-
+    ).run(as_dict=True)
+ 
+    for r in result:
+        r["date"] = str(checkin_date)
+        r["employee_wfh_details"] = [{"employee": r.get("employee")}]
+        r["choose_date"] = [{"date": str(checkin_date)}]
+ 
     return result
 
 
