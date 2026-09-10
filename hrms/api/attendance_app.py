@@ -2,6 +2,7 @@ import frappe
 import os
 import base64
 from frappe import _
+from frappe.utils import now
 from frappe.utils import today, add_days
 from frappe.utils import get_first_day, get_last_day
 from frappe.utils import cint
@@ -137,8 +138,41 @@ def get_all_geofence():
 
 	return result
 
+# whf api
+@frappe.whitelist()
+def get_all_wfh():
+    user = frappe.session.user  
+    wfh_records = frappe.get_all(
+        "Employee WFH",
+        fields="*",  
+		filters= {
+			"docstatus": 1
+		},
+        order_by="creation desc",
+        limit=999999,
+    )
 
-from frappe.utils import now
+    result = []
+    for record in wfh_records:
+        
+        details = frappe.get_all(
+            "Employee WFH Detail",
+            fields="*",
+            filters={"parent": record.name},
+        )
+
+        dates = frappe.get_all(
+            "Employee WFH Date",
+            fields="*",
+            filters={"parent": record.name},
+        )
+
+        record["employee_wfh_details"] = details
+        record["choose_date"] = dates
+
+        result.append(record)
+
+    return result
 
 
 @frappe.whitelist()
