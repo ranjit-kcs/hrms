@@ -141,44 +141,45 @@ def get_all_geofence():
 # whf api
 @frappe.whitelist()
 def get_all_wfh(employee, date):
-    checkin_date = getdate(date)
- 
-    employee_wfh = frappe.qb.DocType("Employee WFH")
-    wfh_date = frappe.qb.DocType("Employee WFH Date")
-    employee_details = frappe.qb.DocType("Employee WFH Detail")
- 
-    result = (
-        frappe.qb.from_(employee_wfh)
-        .inner_join(employee_details)
-        .on(employee_details.parent == employee_wfh.name)
-        .left_join(wfh_date)
-        .on(wfh_date.parent == employee_wfh.name)
-        .select(
-            employee_wfh.name,
-            employee_details.employee,
-            employee_wfh.docstatus,
-        )
-        .distinct()
-        .where(
-            (employee_details.employee == employee)
-            & (employee_wfh.docstatus == 1)
-            & (
-                (
-                    (employee_wfh.date_type == "Range")
-                    & (employee_wfh.from_date <= checkin_date)
-                    & (employee_wfh.to_date >= checkin_date)
-                )
-                | ((employee_wfh.date_type == "Date") & (wfh_date.date == checkin_date))
-            )
-        )
-    ).run(as_dict=True)
+	checkin_date = getdate(date)
+
+	employee_wfh = frappe.qb.DocType("Employee WFH")
+	wfh_date = frappe.qb.DocType("Employee WFH Date")
+	employee_details = frappe.qb.DocType("Employee WFH Detail")
+
+	result = (
+		frappe.qb.from_(employee_wfh)
+		.inner_join(employee_details)
+		.on(employee_details.parent == employee_wfh.name)
+		.left_join(wfh_date)
+		.on(wfh_date.parent == employee_wfh.name)
+		.select(
+			employee_wfh.name,
+			employee_details.employee,
+			employee_wfh.docstatus,
+		)
+		.distinct()
+		.where(
+			(employee_details.employee == employee)
+			& (employee_wfh.docstatus == 1)
+			& (
+				(
+					(employee_wfh.date_type == "Range")
+					& (employee_wfh.from_date <= checkin_date)
+					& (employee_wfh.to_date >= checkin_date)
+				)
+				| ((employee_wfh.date_type == "Date") & (wfh_date.date == checkin_date))
+			)
+		)
+	).run(as_dict=True)
 
 	for r in result:
-        r["date"] = str(checkin_date)
-        r["employee_wfh_details"] = [{"employee": r.get("employee")}]
-        r["choose_date"] = [{"date": str(checkin_date)}]
- 
-    return result
+		r["date"] = str(checkin_date)
+		r["employee_wfh_details"] = [{"employee": r.get("employee")}]
+		r["choose_date"] = [{"date": str(checkin_date)}]
+
+	return result
+
 
 
 @frappe.whitelist()
