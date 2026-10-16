@@ -84,6 +84,19 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			},
 		},
 		{
+			fieldname: "employment_type",
+			label: __("Employment Type"),
+			fieldtype: "Link",
+			options: "Employment Type",
+		},
+		{
+			fieldname: "status",
+			label: __("Status"),
+			fieldtype: "Select",
+			options: ["", "Active", "Inactive", "Suspended", "Left"],
+			default: "Active",
+		},
+		{
 			fieldname: "company",
 			label: __("Company"),
 			fieldtype: "Link",

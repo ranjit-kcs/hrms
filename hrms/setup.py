@@ -9,6 +9,7 @@ from frappe.desk.page.setup_wizard.setup_wizard import make_records
 from frappe.permissions import add_permission, update_permission_property
 
 from hrms.overrides.company import delete_company_fixtures
+from hrms.subscription_utils import is_new_hr_site, set_hrms_as_default_app
 
 
 def after_install():
@@ -23,6 +24,9 @@ def after_install():
 	create_default_role_profiles()
 	run_post_install_patches()
 	add_default_hr_permissions()
+
+	if is_new_hr_site():
+		set_hrms_as_default_app()
 
 
 def before_uninstall():
@@ -196,6 +200,17 @@ def get_custom_fields():
 				"label": _("Job Applicant"),
 				"options": "Job Applicant",
 				"insert_after": "employment_details",
+				"depends_on": "eval:doc.job_applicant",
+				"read_only": 1,
+			},
+			{
+				"fieldname": "job_offer",
+				"fieldtype": "Link",
+				"label": _("Job Offer"),
+				"options": "Job Offer",
+				"insert_after": "job_applicant",
+				"depends_on": "eval:doc.job_offer",
+				"read_only": 1,
 			},
 			{
 				"fieldname": "grade",
@@ -857,15 +872,24 @@ def get_salary_slip_loan_fields():
 
 # Add default permission for hr roles
 def add_default_hr_permissions():
+	# Project and Task perms are needed for the Employee Onboarding / Separation flow,
+	# which creates a Project and Tasks and assigns them to users. assign_to.add() does a
+	# read check on Task, and on_cancel deletes the Project and its Tasks.
+	project_task_perms = {
+		"Project": {"read": 1, "write": 1, "create": 1, "delete": 1},
+		"Task": {"read": 1, "write": 1, "create": 1, "delete": 1},
+	}
 	role_permissions = {
 		"HR User": {
 			"Role": {"read": 1},
 			"Currency": {"read": 1},
+			**project_task_perms,
 		},
 		"HR Manager": {
 			"Role": {"read": 1},
 			"Currency": {"read": 1},
 			"Email Account": {"read": 1},
+			**project_task_perms,
 		},
 	}
 
@@ -875,11 +899,6 @@ def add_default_hr_permissions():
 
 			for ptype, value in ptypes.items():
 				update_permission_property(doctype, role, permlevel=0, ptype=ptype, value=value)
-
-
-def make_people_workspace_standard():
-	if frappe.db.exists("Workspace Sidebar", "People"):
-		frappe.db.set_value("Workspace Sidebar", "People", "standard", 1)
 
 
 def setup_repost_defaults():
