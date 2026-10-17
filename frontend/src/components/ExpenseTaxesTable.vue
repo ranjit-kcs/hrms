@@ -4,7 +4,7 @@
 			<h2 class="text-base font-semibold text-gray-800">{{ __("Taxes & Charges") }} </h2>
 			<div class="flex flex-row gap-3 items-center">
 				<span class="text-base font-semibold text-gray-800">
-					{{ formatCurrency(expenseClaim.total_taxes_and_charges, expenseClaim.currency) }}
+					{{ formatCurrency(expenseClaim.total_taxes_and_charges, currency) }}
 				</span>
 				<Button
 					v-if="!isReadOnly"
@@ -35,17 +35,17 @@
 									{{ item.account_head }}
 								</div>
 								<div class="text-xs font-normal text-gray-500">
-									<span> Rate: {{ formatCurrency(item.rate, expenseClaim.currency) }} </span>
+									<span> Rate: {{ formatCurrency(item.rate, currency) }} </span>
 									<span class="whitespace-pre"> &middot; </span>
 									<span class="whitespace-nowrap">
-										Amount: {{ formatCurrency(item.tax_amount, expenseClaim.currency) }}
+										Amount: {{ formatCurrency(item.tax_amount, currency) }}
 									</span>
 								</div>
 							</div>
 						</div>
 						<div class="flex flex-row justify-end items-center gap-2">
 							<span class="text-gray-700 font-normal rounded text-base">
-								{{ formatCurrency(item.total, expenseClaim.currency) }}
+								{{ formatCurrency(item.total, currency) }}
 							</span>
 							<FeatherIcon name="chevron-right" class="h-5 w-5 text-gray-500" />
 						</div>
@@ -134,11 +134,14 @@ import EmptyState from "@/components/EmptyState.vue"
 import CustomIonModal from "@/components/CustomIonModal.vue"
 
 import { formatCurrency } from "@/utils/formatters"
-import { useCurrencyConversion } from "@/composables/useCurrencyConversion"
 
 const props = defineProps({
 	expenseClaim: {
 		type: Object,
+		required: true,
+	},
+	currency: {
+		type: String,
 		required: true,
 	},
 	isReadOnly: {
@@ -211,13 +214,6 @@ const taxesTableFields = createResource({
 	},
 })
 taxesTableFields.reload()
-
-const expenseClaimRef = computed(() => props.expenseClaim)
-useCurrencyConversion(
-	taxesTableFields,
-	expenseClaimRef,
-	["tax_amount", "total"]
-)
 
 const modalTitle = computed(() => {
 	if (props.isReadOnly) return __("Expense Tax")

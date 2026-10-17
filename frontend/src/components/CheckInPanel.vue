@@ -1,219 +1,243 @@
 <template>
-	<div class="flex flex-col bg-white rounded w-full py-6 px-4 border-none">
-		<h2 class="text-lg font-bold text-gray-900">
-			{{ __("Hey, {0} 👋", [employee?.data?.first_name]) }}
-		</h2>
+  <div class="flex flex-col bg-white rounded w-full py-6 px-4 border-none">
+    <h2 class="text-lg font-bold text-gray-900">
+      {{ __("Hey, {0} 👋", [employee?.data?.first_name]) }}
+    </h2>
 
-		<template v-if="settings.data?.allow_employee_checkin_from_mobile_app">
-			<div class="font-medium text-sm text-gray-500 mt-1.5" v-if="lastLog?.time">
-				<span>{{ __("Last {0} was at {1}", [__(lastLogType), formatTimestamp(lastLog.time)]) }}</span>
-				<span class="whitespace-pre"> &middot; </span>
-				<router-link :to="{ name: 'EmployeeCheckinListView' }" v-slot="{ navigate }">
-					<span @click="navigate" class="underline">{{ __("View List") }}</span>
-				</router-link>
-			</div>
-			<Button
-				class="mt-4 mb-1 drop-shadow-sm py-5 text-base"
-				id="open-checkin-modal"
-				:loading="checkins.list.loading"
-				@click="handleEmployeeCheckin"
-			>
-				<template #prefix>
-					<FeatherIcon
-						:name="nextAction.action === 'IN' ? 'arrow-right-circle' : 'arrow-left-circle'"
-						class="w-4"
-					/>
-				</template>
-				{{ nextAction.label }}
-			</Button>
-		</template>
+    <template v-if="settings.data?.allow_employee_checkin_from_mobile_app">
+      <div class="font-medium text-sm text-gray-500 mt-1.5" v-if="lastLog">
+        <span>
+          {{ __("Last {0} was at {1}", [__(lastLogType), formatTimestamp(lastLog.time)]) }}
+        </span>
+        <span class="whitespace-pre"> &middot; </span>
 
-		<div v-else class="font-medium text-sm text-gray-500 mt-1.5">
-			{{ dayjs().format("ddd, D MMMM, YYYY") }}
-		</div>
-	</div>
+        <router-link :to="{ name: 'EmployeeCheckinListView' }">
+          <span class="underline">View List</span>
+        </router-link>
+      </div>
 
-	<ion-modal
-		v-if="settings.data?.allow_employee_checkin_from_mobile_app"
-		ref="modal"
-		trigger="open-checkin-modal"
-		:initial-breakpoint="1"
-		:breakpoints="[0, 1]"
-	>
-		<div class="h-120 w-full flex flex-col items-center justify-center gap-5 p-4 mb-5">
-			<div class="flex flex-col gap-1.5 mt-2 items-center justify-center">
-				<div class="font-bold text-xl">
-					{{ dayjs(checkinTimestamp).format("hh:mm:ss a") }}
-				</div>
-				<div class="font-medium text-gray-500 text-sm">
-					{{ dayjs().format("D MMM, YYYY") }}
-				</div>
-			</div>
+      <Button
+        class="mt-4 mb-1 drop-shadow-sm py-5 text-base"
+        @click="goToCheckinPage"
+      >
+        <template #prefix>
+          <FeatherIcon
+            :name="nextAction.action === 'IN' ? 'arrow-right-circle' : 'arrow-left-circle'"
+            class="w-4"
+          />
+        </template>
+        {{ nextAction.label }}
+      </Button>
+    </template>
 
-			<template v-if="settings.data?.allow_geolocation_tracking">
-				<span v-if="locationStatus" class="font-medium text-gray-500 text-sm">
-					{{ locationStatus }}
-				</span>
-
-				<div class="rounded border-4 translate-z-0 block overflow-hidden w-full h-170">
-					<iframe
-						width="100%"
-						height="170"
-						frameborder="0"
-						scrolling="no"
-						marginheight="0"
-						marginwidth="0"
-						style="border: 0"
-						:src="`https://maps.google.com/maps?q=${latitude},${longitude}&hl=en&z=15&amp;output=embed`"
-					>
-					</iframe>
-				</div>
-			</template>
-
-			<Button :loading="checkins.insert.loading" variant="solid" class="w-full py-5 text-sm disabled:bg-gray-700" @click="submitLog(nextAction.action)">
-				{{ __("Confirm {0}", [nextAction.label]) }}
-			</Button>
-		</div>
-	</ion-modal>
+    <div v-else class="font-medium text-sm text-gray-500 mt-1.5">
+      {{ dayjs().format("ddd, D MMMM, YYYY") }}
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { createListResource, toast, FeatherIcon } from "frappe-ui"
-import { computed, inject, ref, onMounted, onBeforeUnmount } from "vue"
-import { IonModal, modalController } from "@ionic/vue"
-
+import { createResource, createListResource, FeatherIcon,toast } from "frappe-ui"
+import { computed, inject,watch,ref,onMounted } from "vue"
+import { useRouter } from "vue-router"
 import { formatTimestamp } from "@/utils/formatters"
-import { settings } from "@/data/settings"
+import { useIonRouter ,onIonViewWillEnter} from "@ionic/vue"
+import { getRuntimeConfig } from "@/utils/runtimeConfig";
+import { getRuntimeURLConfig } from "../utils/runtimeURLConfig"
+
+
+let azure_key = ref("")
+let distance_url = ref("")
+let distance_response = ref("")
+let location_url = ref("")
+let location_response = ref("")
+
+onMounted(() => {
+
+  checkins.reload()
+  
+})
+
+const props = defineProps({
+  refreshKey: Number,
+})
+
+watch(
+  () => props.refreshKey,
+  () => {
+    checkins.reload()
+	initAzure();
+  }
+)
 
 const DOCTYPE = "Employee Checkin"
-
-const socket = inject("$socket")
+const router = useRouter()
 const employee = inject("$employee")
+const user = inject("$user")
 const dayjs = inject("$dayjs")
 const __ = inject("$translate")
-const checkinTimestamp = ref(null)
-const latitude = ref(0)
-const longitude = ref(0)
-const locationStatus = ref("")
+const geofence = inject("$geofence")
+const wfh = inject("$wfh")
 
-const checkins = createListResource({
-	doctype: DOCTYPE,
-	fields: ["name", "employee", "employee_name", "log_type", "time", "device_id"],
-	filters: {
-		employee: employee.data.name,
-	},
-	orderBy: "time desc",
+const settings = createResource({
+  url: "hrms.api.get_hr_settings",
+  auto: true,
 })
-checkins.reload()
+async function initAzure() {
+  const config = await getRuntimeConfig();
+  azure_key = config.AZURE_KEY;
+  const url_config = await getRuntimeURLConfig();
+  distance_url = url_config.distance_url;
+  location_url = url_config.location_url;
+  distance_response = url_config.distance_response;
+  location_response = url_config.location_response;
+}
+const checkins = createListResource({
+  doctype: DOCTYPE,
+  fields: ["name", "employee", "employee_name", "log_type", "time", "device_id", "location", "latitude", "longitude", "reference_dt", "reference_dn"],
+  filters: { employee: employee.data.name },
+  orderBy: "time desc",
+})
 
 const lastLog = computed(() => {
-	if (!checkins.data?.length) return null
-	return checkins.data[0]
+  if (checkins.list.loading || !checkins.data) return null
+  return checkins.data[0]
 })
 
 const lastLogType = computed(() => {
-	return lastLog?.value?.log_type === "IN" ? "check-in" : "check-out"
+  return lastLog?.value?.log_type === "IN" ? "check-in" : "check-out"
 })
 
 const nextAction = computed(() => {
-	return lastLog?.value?.log_type === "IN"
-		? { action: "OUT", label: __("Check Out") }
-		: { action: "IN", label: __("Check In") }
-})
+  const log = lastLog?.value;
+  if (!log || !log.time) {
+    return { action: "IN", label: __("Check In") };
+  }
 
-function handleLocationSuccess(position) {
-	latitude.value = position.coords.latitude
-	longitude.value = position.coords.longitude
+  const lastLogDate = log.time.split(" ")[0]; // YYYY-MM-DD
+  const todayDate = new Date().toISOString().split("T")[0];
 
-	locationStatus.value = [
-		__("Latitude: {0}°", [Number(latitude.value).toFixed(5)]),
-		__("Longitude: {0}°", [Number(longitude.value).toFixed(5)]),
-	].join(", ")
+  // If last log was IN but not today → forgot checkout → allow Check In
+  if (log.log_type === "IN" && lastLogDate === todayDate) {
+    return { action: "OUT", label: __("Check Out") };
+  }
+
+  return { action: "IN", label: __("Check In") };
+});
+
+function goToCheckinPage() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+
+  // if (!isStandalone) {
+  //   toast({
+  //     title: __("Not Allowed"),
+  //     text: __("Check-in allowed only from the HRMS mobile app"),
+  //     icon: "x-circle",
+  //     position: "top-center",
+  //     timeout: 3000,
+  //   })
+  //   return
+  // }
+  const today = new Date().toISOString().split("T")[0]
+
+  const wfhRecordForToday = wfh.data.find((item) => {
+    const sameEmployee = item.employee_wfh_details?.some(
+      (d) => d.employee === employee.data.name
+    )
+    const hasTodayDate = item.choose_date?.some((d) => d.date === today)
+    return sameEmployee && hasTodayDate
+  })
+const allowNonMobile = employee.data.allow_non_mobile_checkin == 1
+if (!wfhRecordForToday && !allowNonMobile) {
+  toast({
+    title: __("Not Allowed"),
+    text: __("Non-mobile punching is not allowed"),
+    icon: "x-circle",
+    position: "top-center",
+  })
+  return
 }
 
-function handleLocationError(error) {
-	locationStatus.value = __("Unable to retrieve your location")
-	if (error) locationStatus.value += `: ERROR(${error.code}): ${error.message}`
-}
+  if(geofence.data.length === 0 && employee.data.field_employee !='Yes'){
+		toast({
+          title: __("Required"),
+          text: __("Geofence is Missing, Contact HR",),
+          icon: "check-circle",
+          position: "top-center",
+        })
+    return; 
+  }
+	if (!azure_key) {
+		toast({
+          title: __("Required"),
+          text: __("Azure Key Miss, Contact HR",),
+          icon: "check-circle",
+          position: "top-center",
+        })
+    return; 
+  }
+  if (!distance_url) {
+	toast({
+          title: __("Required"),
+          text: __("Distance URL value is Missing, Contact HR",),
+          icon: "check-circle",
+          position: "top-center",
+        })
+    return;
+  }
+  if (!location_url) {
+	toast({
+          title: __("Required"),
+          text: __("Location URL value is Missing,, Contact HR",),
+          icon: "check-circle",
+          position: "top-center",
+        })
 
-const fetchLocation = () => {
-	if (!navigator.geolocation) {
-		locationStatus.value = __("Geolocation is not supported by your current browser")
-	} else {
-		locationStatus.value = __("Locating...")
-		navigator.geolocation.getCurrentPosition(handleLocationSuccess, handleLocationError)
-	}
-}
-
-const handleEmployeeCheckin = () => {
-	checkinTimestamp.value = dayjs().format("YYYY-MM-DD HH:mm:ss")
-
+    return;
+  }
+  if (!distance_response) {
+	toast({
+          title: __("Required"),
+          text: __("Distance Response value is Missing, Contact HR",),
+          icon: "check-circle",
+          position: "top-center",
+        })
+    return;
+  }
+  if (!location_response) {
+	toast({
+          title: __("Required"),
+          text: __("Location Response value is Missing, Contact HR",),
+          icon: "check-circle",
+          position: "top-center",
+        })
+    return;
+  }
+    if (!user?.data?.user_image) {
+		toast({
+          title: __("Required"),
+          text: __("Photo is Missing, Contact HR",),
+          icon: "check-circle",
+          position: "top-center",
+        })
+    return
+  }
 	if (settings.data?.allow_geolocation_tracking) {
-		fetchLocation()
-	}
-}
-
-const submitLog = (logType) => {
-	const actionLabel = logType === "IN" ? __("Check-in") : __("Check-out")
-
-	checkins.insert.submit(
-		{
-			employee: employee.data.name,
-			log_type: logType,
-			time: checkinTimestamp.value,
-			latitude: latitude.value,
-			longitude: longitude.value,
-		},
-		{
-			onSuccess(data) {
-				if (!data?.name) {
-					toast({
-						title: __("Error"),
-						text: __("{0} failed!", [actionLabel]),
-						icon: "alert-circle",
-						position: "bottom-center",
-						iconClasses: "text-red-500",
-					})
-					return
-				}
-
-				modalController.dismiss()
-				toast({
-					title: __("Success"),
-					text: __("{0} successful!", [actionLabel]),
-					icon: "check-circle",
-					position: "bottom-center",
-					iconClasses: "text-green-500",
-				})
-			},
-			onError(error) {
-				let messages = error.messages?.length ? error.messages : [__("{0} failed!", [actionLabel])]
-
-				for (const message of messages) {
-					toast({
-						title: __("Error"),
-						text: message || __("{0} failed!", [actionLabel]),
-						icon: "alert-circle",
-						position: "bottom-center",
-						iconClasses: "text-red-500",
-					})
-				}
-			},
-		}
-	)
-}
-
-onMounted(() => {
-	socket.emit("doctype_subscribe", DOCTYPE)
-	socket.on("list_update", (data) => {
-		if (data.doctype == DOCTYPE) {
-			checkins.reload()
-		}
-	})
+    router.push({
+  name: "CheckinConfirm",
+  query: {
+    action: nextAction.value.action,
+  },
 })
+  }else{
+	toast({
+          title: __("Required"),
+          text: __("Allow Geolocation is Not Enabled",),
+          icon: "check-circle",
+          position: "bottom-center",
+        })
+  }
+  
 
-onBeforeUnmount(() => {
-	socket.emit("doctype_unsubscribe", DOCTYPE)
-	socket.off("list_update")
-})
+}
 </script>

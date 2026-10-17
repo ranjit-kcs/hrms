@@ -60,7 +60,6 @@ const props = defineProps({
 
 const colorMap = {
 	Paid: "green",
-	"Partially Paid": "blue",
 	Unpaid: "orange",
 	Claimed: "blue",
 	Returned: "gray",

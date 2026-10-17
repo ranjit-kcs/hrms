@@ -1,3 +1,4 @@
+
 import { createApp } from "vue"
 import App from "./App.vue"
 import router from "./router"
@@ -19,6 +20,11 @@ import { IonicVue } from "@ionic/vue"
 import { session } from "@/data/session"
 import { userResource } from "@/data/user"
 import { employeeResource } from "@/data/employee"
+import { wfhResource } from "./data/wfh"
+import { geofenceResource } from "./data/geofence"
+import { locationResource } from "./data/location"
+import { leadsResource } from "./data/lead"
+
 
 import dayjs from "@/utils/dayjs"
 import getIonicConfig from "@/utils/ionicConfig"
@@ -32,6 +38,7 @@ import "@ionic/vue/css/core.css"
 import "./theme/variables.css"
 
 import "./main.css"
+
 
 const app = createApp(App)
 const socket = initSocket()
@@ -50,6 +57,8 @@ app.use(IonicVue, getIonicConfig())
 
 if (session?.isLoggedIn && !employeeResource?.data) {
 	employeeResource.reload()
+	wfhResource.reload()
+	geofenceResource.reload()
 }
 
 app.provide("$session", session)
@@ -57,6 +66,13 @@ app.provide("$user", userResource)
 app.provide("$employee", employeeResource)
 app.provide("$socket", socket)
 app.provide("$dayjs", dayjs)
+app.provide("$wfh", wfhResource)
+app.provide("$geofence", geofenceResource)
+app.provide("$location", locationResource)
+app.provide("$leads", leadsResource)
+
+
+
 
 const registerServiceWorker = async () => {
 	window.frappePushNotification = new FrappePushNotification("hrms")
@@ -65,15 +81,13 @@ const registerServiceWorker = async () => {
 		let serviceWorkerURL = "/assets/hrms/frontend/sw.js"
 		let config = ""
 
-		if (window.frappe?.boot?.push_relay_server_url) {
-			try {
-				config = await window.frappePushNotification.fetchWebConfig()
-				serviceWorkerURL = `${serviceWorkerURL}?config=${encodeURIComponent(
-					JSON.stringify(config)
-				)}`
-			} catch (err) {
-				console.error("Failed to fetch FCM config", err)
-			}
+		try {
+			config = await window.frappePushNotification.fetchWebConfig()
+			serviceWorkerURL = `${serviceWorkerURL}?config=${encodeURIComponent(
+				JSON.stringify(config)
+			)}`
+		} catch (err) {
+			console.error("Failed to fetch FCM config", err)
 		}
 
 		navigator.serviceWorker
@@ -123,10 +137,11 @@ router.beforeEach(async (to, _, next) => {
 		// password reset page is outside the PWA scope
 		if (to.path === "/update-password") {
 			return next(false)
-		} else if (!["Login", "ForgotPassword"].includes(to.name)) {
-			return next({ name: "Login" })
+		} else if (to.name !== "Login") {
+			next({ name: "Login" })
 		}
 	}
+
 
 	if (isLoggedIn && to.name !== "InvalidEmployee") {
 		await employeeResource.promise
@@ -137,7 +152,7 @@ router.beforeEach(async (to, _, next) => {
 			employeeResource?.data?.user_id !== userResource.data.name
 		) {
 			next({ name: "InvalidEmployee" })
-		} else if (["Login", "ForgotPassword"].includes(to.name)) {
+		} else if (to.name === "Login") {
 			next({ name: "Home" })
 		} else {
 			next()

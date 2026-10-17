@@ -1,45 +1,73 @@
 <template>
-	<ion-modal
-		ref="modal"
-		:trigger="trigger"
-		:initial-breakpoint="1"
-		:breakpoints="[0, 1]"
-		:backdrop-breakpoint="1"
-		:is-open="isOpen"
-		@willPresent="showModalBackdrop = true"
-		@willDismiss="showModalBackdrop = false"
-		@didDismiss="() => emit('did-dismiss')"
-	>
-		<slot name="actionSheet"></slot>
-	</ion-modal>
+  <!-- Bottom Sheet Modal -->
+  <div
+    v-if="isOpen || showModal"
+    class="fixed inset-0 z-[10000] !mt-0 flex items-end justify-center"
+  >
+    <!-- Backdrop -->
+    <div
+      class="absolute inset-0 bg-black opacity-30 cursor-pointer"
+      @click="closeModal"
+    />
 
-	<!-- backdrop -->
-	<div
-		v-if="showModalBackdrop"
-		class="fixed inset-0 z-[10000] !mt-0 bg-black opacity-30 cursor-pointer"
-		@click="() => modalController.dismiss()"
-	></div>
+    <!-- Sheet Content -->
+    <div class="relative w-full sm:w-96 bg-white rounded-t-xl z-10">
+      <slot name="actionSheet" />
+    </div>
+  </div>
 </template>
 
 <script setup>
-/**
- * Problem: ion-modal traps focus inside the modal making controls like autocomplete unusable inside it
- * @see https://github.com/ionic-team/ionic-framework/issues/24646
- * This custom ion-modal disables backdrop using backdrop-breakpoint=1 and we add a custom backdrop
- */
-import { ref } from "vue"
-import { IonModal, modalController } from "@ionic/vue"
+import { ref, watch } from "vue"
 
 const props = defineProps({
-	trigger: {
-		type: String,
-		required: false,
-	},
-	isOpen: {
-		type: Boolean,
-		required: false,
-	},
+  trigger: {
+    type: String,
+    required: false,
+  },
+  isOpen: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
 })
+
 const emit = defineEmits(["did-dismiss"])
-const showModalBackdrop = ref(false)
+const showModal = ref(false)
+
+// Support trigger-based opening via button id
+function handleTriggerClick() {
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+  emit("did-dismiss")
+}
+
+// Watch external isOpen prop
+watch(
+  () => props.isOpen,
+  (val) => {
+    if (!val) {
+      showModal.value = false
+      emit("did-dismiss")
+    }
+  }
+)
+
+// Attach click listener to trigger element by id (if provided)
+watch(
+  () => props.trigger,
+  (triggerId) => {
+    if (!triggerId) return
+    const el = document.getElementById(triggerId)
+    if (el) {
+      el.addEventListener("click", handleTriggerClick)
+    }
+  },
+  { immediate: true }
+)
+
+defineExpose({ closeModal })
 </script>

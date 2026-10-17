@@ -133,17 +133,17 @@ function downloadPDF() {
 		headers["X-Frappe-CSRF-Token"] = window.csrf_token
 	}
 
-	fetch("/api/method/hrms.api._download_pdf", {
+	fetch("/api/method/hrms.api.download_salary_slip", {
 		method: "POST",
 		headers,
-		body: new URLSearchParams({doctype: "Salary Slip" ,docname: salarySlipName }),
+		body: new URLSearchParams({ name: salarySlipName }),
 		responseType: "blob",
 	})
 		.then((response) => {
 			if (response.ok) {
 				return response.blob()
 			} else {
-				downloadError.value = __("Failed to download PDF")
+				downloadError.value = "Failed to download PDF"
 			}
 		})
 		.then((blob) => {

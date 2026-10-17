@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "@ionic/vue-router"
+import { createRouter, createWebHistory } from "vue-router"
 
 import TabbedView from "@/views/TabbedView.vue"
 import attendanceRoutes from "./attendance"
@@ -53,11 +53,6 @@ const routes = [
 		component: () => import("@/views/Login.vue"),
 	},
 	{
-		path: "/forgot-password",
-		name: "ForgotPassword",
-		component: () => import("@/views/ForgotPassword.vue"),
-	},
-	{
 		path: "/profile",
 		name: "Profile",
 		component: () => import("@/views/Profile.vue"),
@@ -73,14 +68,14 @@ const routes = [
 		component: () => import("@/views/AppSettings.vue"),
 	},
 	{
-		path: "/change-password",
-		name: "ChangePassword",
-		component: () => import("@/views/ChangePassword.vue"),
-	},
-	{
 		path: "/invalid-employee",
 		name: "InvalidEmployee",
 		component: () => import("@/views/InvalidEmployee.vue"),
+	},
+	{
+		path: "/checkin/confirm",
+		name: "CheckinConfirm",
+		component: () => import("@/components/CheckinConfirm.vue"),
 	},
 	...attendanceRoutes,
 	...leaveRoutes,

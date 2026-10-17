@@ -64,6 +64,7 @@ import { computed, inject, ref, watch } from "vue"
 import { createResource } from "frappe-ui"
 
 const dayjs = inject("$dayjs")
+const employee = inject("$employee")
 const __ = inject("$translate")
 const firstOfMonth = ref(dayjs().date(1).startOf("D"))
 
@@ -124,6 +125,7 @@ const calendarEvents = createResource({
 	cache: "hrms:attendance_calendar_events",
 	makeParams() {
 		return {
+			employee: employee.data.name,
 			from_date: firstOfMonth.value.format("YYYY-MM-DD"),
 			to_date: firstOfMonth.value.endOf("M").format("YYYY-MM-DD"),
 		}
